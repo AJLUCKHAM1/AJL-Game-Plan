@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="J — BJJ">
+<title>J — BJJ Game Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:    #e63946;
+    --orange: #f4a261;
+    --teal:   #2ec4b6;
+    --purple: #9b5de5;
+    --pink:   #f72585;
+    --green:  #06d6a0;
+    --yellow: #ffd166;
+    --blue:   #4895ef;
+    --bg:     #0a0a0a;
+    --surface: rgba(255,255,255,0.03);
+    --text:   #f0ece3;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background: linear-gradient(160deg, #0d0d0d 0%, #0f0b0b 50%, #0a0d0f 100%);
+    min-height: 100vh;
+    padding-bottom: 48px;
+  }
+
+  /* ── Header ── */
+  .header { padding: 20px 16px 0; max-width: 1100px; margin: 0 auto; }
+  .header-inner { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 4px; }
+  .header-emoji { font-size: 2rem; line-height: 1; }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(1.3rem, 4vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+    line-height: 1.05;
+  }
+  h1 span { color: var(--purple); }
+
+  .hint {
+    color: #333;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: 'Barlow Condensed', sans-serif;
+    margin-top: 6px;
+  }
+
+  #save-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'Barlow Condensed', sans-serif;
+    color: #333;
+    margin-top: 5px;
+    transition: color 0.3s;
+  }
+  #save-indicator.saved { color: var(--teal); }
+  #save-indicator .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 3px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 3px;
+    margin: 14px auto 18px;
+    max-width: 1100px;
+    width: calc(100% - 32px);
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #555;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+  .tab-btn.active { background: var(--purple); color: #fff; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    color: #333;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding: 0 16px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Grid ──
+     iPhone portrait  (~390px)  → 2 columns
+     iPad portrait    (~768px)  → 3 columns
+     iPad landscape   (~1024px) → 4-5 columns
+  */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 600px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 800px)  { .grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1000px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+
+  /* Escapes has 8 cards — allow more columns */
+  .grid-escapes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  @media (min-width: 600px)  { .grid-escapes { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 800px)  { .grid-escapes { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1000px) { .grid-escapes { grid-template-columns: repeat(4, 1fr); } }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 12px;
+    border-top-width: 3px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-header { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+
+  .card-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #0d0d0d;
+    flex-shrink: 0;
+  }
+
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+
+  /* ── Move rows ── */
+  .move-list { list-style: none; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+  .move-item {
+    display: flex;
+    align-items: flex-start;  /* top-align so bullet sits beside first line */
+    gap: 5px;
+  }
+
+  .move-bullet {
+    font-size: 0.45rem;
+    flex-shrink: 0;
+    margin-top: 6px; /* nudge bullet to align with first text line */
+    color: inherit;
+  }
+
+  /* TEXTAREA replaces input — wraps freely, auto-grows */
+  .move-text {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    padding: 2px 0;
+    outline: none;
+    cursor: text;
+    transition: border-color 0.15s;
+    width: 100%;
+    min-width: 0;
+    resize: none;          /* no drag handle */
+    overflow: hidden;      /* height driven by JS */
+    min-height: 22px;
+  }
+  .move-text:focus { border-bottom-color: currentColor; }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #2a2a2a;
+    cursor: pointer;
+    font-size: 0.6rem;
+    padding: 4px 2px 0;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .remove-btn:hover, .remove-btn:active { color: #666; }
+
+  /* ── Add button ── */
+  .add-btn {
+    margin-top: 8px;
+    background: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 0.68rem;
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.06em;
+    width: 100%;
+    border-style: dashed;
+    border-width: 1px;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .add-btn:active { opacity: 0.7; }
+
+  /* ── Positional rows ── */
+  .pos-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 5px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  .pos-arrow { font-size: 0.45rem; flex-shrink: 0; margin-top: 6px; }
+
+  /* ── Escape sub-label ── */
+  .escape-sublabel {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.38;
+    margin-bottom: 8px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 36px;
+    padding: 14px 16px 0;
+    border-top: 1px solid #1a1a1a;
+    color: #222;
+    font-size: 0.6rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Tab panels ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #333;
+    text-decoration: none;
+    margin-top: 10px;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s;
+  }
+  .back-link:active { color: #9b5de5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <span class="header-emoji">🥋</span>
+    <h1>J's<br><span>Game Plan</span></h1>
+  </div>
+  <div class="hint">Tap any field to edit · Changes save automatically</div>
+    <a href="index.html" class="back-link">‹ Back to Game Plans</a>
+<div id="save-indicator"><span class="dot"></span><span id="save-text">Ready</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('gameplan',this)">🗡 Moves</button>
+  <button class="tab-btn" onclick="switchTab('positions',this)">📍 Positions</button>
+  <button class="tab-btn" onclick="switchTab('escapes',this)">🚪 Escapes</button>
+</div>
+
+<div id="tab-gameplan" class="tab-panel active">
+  <div class="section-label">Your go-to weapons by category</div>
+  <div class="grid" id="gameplan-grid"></div>
+</div>
+
+<div id="tab-positions" class="tab-panel">
+  <div class="section-label">What to look for from each position</div>
+  <div class="grid" id="positions-grid"></div>
+</div>
+
+<div id="tab-escapes" class="tab-panel">
+  <div class="section-label">Escape routes by situation</div>
+  <div class="grid grid-escapes" id="escapes-grid"></div>
+</div>
+
+<div class="footer">Train hard · Flow with it · Trust your game</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════════════════════
+
+const DEFAULT_CATEGORIES = [
+  { key:"takedowns",   label:"Takedowns",    icon:"⬇", color:"#e63946",
+    moves:["Double Leg","Single Leg","Hip Toss","Ankle Pick","Arm Drag to Back"] },
+  { key:"guardPasses", label:"Guard Passes", icon:"⟶", color:"#f4a261",
+    moves:["Torreando","Knee Slice","Over-Under","Leg Weave","Double Under"] },
+  { key:"submissions", label:"Submissions",  icon:"✓",  color:"#2ec4b6",
+    moves:["Rear Naked Choke","Armbar","Triangle","Guillotine","Kimura"] },
+  { key:"guards",      label:"Guards",       icon:"⬆", color:"#9b5de5",
+    moves:["Closed Guard","De La Riva","Spider Guard","Half Guard","Butterfly"] },
+  { key:"sweeps",      label:"Sweeps",       icon:"↺", color:"#f72585",
+    moves:["Scissor Sweep","Flower Sweep","Elevator Sweep","Pendulum","Lumberjack"] },
+];
+
+const DEFAULT_POSITIONS = [
+  { key:"mount",       label:"Mount",        color:"#e63946",
+    options:["Armbar","RNC (take back)","Americana","Triangle from mount","Ezekiel Choke"] },
+  { key:"sideControl", label:"Side Control", color:"#f4a261",
+    options:["Kimura","Americana","Katagatame","Transition to mount","North-South choke"] },
+  { key:"backControl", label:"Back Control", color:"#2ec4b6",
+    options:["Rear Naked Choke","Bow & Arrow Choke","Armbar from back","Body triangle","Clock choke"] },
+  { key:"closedGuard", label:"Closed Guard", color:"#9b5de5",
+    options:["Triangle","Armbar","Guillotine","Scissor Sweep","Hip Bump Sweep"] },
+  { key:"halfGuard",   label:"Half Guard",   color:"#f72585",
+    options:["Dogfight (take back)","Old school sweep","Deep half entry","Kimura trap","Back take"] },
+  { key:"turtle",      label:"Turtle",       color:"#06d6a0",
+    options:["Clock choke","Back take","Arm-in guillotine","Dope mount roll","Crucifix"] },
+];
+
+const DEFAULT_ESCAPES = [
+  { key:"escSideControl", label:"Side Control", sublabel:"Position Escape · 2 Options", color:"#e63946",
+    moves:["Elbow-knee escape (shrimp to guard)","Bridge & roll to guard"] },
+  { key:"escMount",       label:"Mount",         sublabel:"Position Escape · 2 Options", color:"#f4a261",
+    moves:["Elbow-knee escape (shrimp out)","Trap & roll (Upa bridge)"] },
+  { key:"escBack",        label:"Back Control",  sublabel:"Position Escape · 2 Options", color:"#2ec4b6",
+    moves:["Seat belt strip & turn in to face","Slide down & spin to face opponent"] },
+  { key:"escNorthSouth",  label:"North-South",   sublabel:"Position Escape · 2 Options", color:"#9b5de5",
+    moves:["Hip escape & re-guard","Frame & spin to single leg"] },
+  { key:"escArmbar",      label:"Armbar",        sublabel:"Submission Escape · 2 Options", color:"#f72585",
+    moves:["Stack & posture up to pass","Hitchhiker escape (roll away)"] },
+  { key:"escTriangle",    label:"Triangle",      sublabel:"Submission Escape · 2 Options", color:"#ffd166",
+    moves:["Posture up & stack to pass","Hitchhiker escape (spin out)"] },
+  { key:"escRNC",         label:"RNC",           sublabel:"Submission Escape · 1 Option",  color:"#4895ef",
+    moves:["Two-on-one wrist strip & chin tuck"] },
+  { key:"escGuillotine",  label:"Guillotine",    sublabel:"Submission Escape · 1 Option",  color:"#06d6a0",
+    moves:["Posture up, step to hip & pull head free"] },
+];
+
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+
+const KEY_CAT = 'j_categories';
+const KEY_POS = 'j_positions';
+const KEY_ESC = 'j_escapes';
+
+function load(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(fallback));
+  } catch(e) { return JSON.parse(JSON.stringify(fallback)); }
+}
+
+let categories = load(KEY_CAT, DEFAULT_CATEGORIES);
+let positions   = load(KEY_POS, DEFAULT_POSITIONS);
+let escapes     = load(KEY_ESC, DEFAULT_ESCAPES);
+
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(KEY_CAT, JSON.stringify(categories));
+      localStorage.setItem(KEY_POS, JSON.stringify(positions));
+      localStorage.setItem(KEY_ESC, JSON.stringify(escapes));
+      flashSaved();
+    } catch(e) {}
+  }, 600);
+}
+
+function flashSaved() {
+  const el  = document.getElementById('save-indicator');
+  const txt = document.getElementById('save-text');
+  el.classList.add('saved');
+  txt.textContent = 'Saved';
+  setTimeout(() => { el.classList.remove('saved'); txt.textContent = 'Ready'; }, 2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// TEXTAREA HELPER — auto-grow on input
+// ═══════════════════════════════════════════════════════
+function autoGrow(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+function makeTextarea(value, onChangeFn, accentColor) {
+  const ta = document.createElement('textarea');
+  ta.className = 'move-text';
+  ta.rows = 1;
+  ta.value = value;
+  ta.style.borderBottomColor = 'transparent';
+  // Use accent colour on focus via inline style swap
+  ta.addEventListener('focus', () => { ta.style.borderBottomColor = accentColor; });
+  ta.addEventListener('blur',  () => { ta.style.borderBottomColor = 'transparent'; onChangeFn(ta.value); });
+  ta.addEventListener('input', () => { autoGrow(ta); onChangeFn(ta.value); });
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ta.blur(); } });
+  requestAnimationFrame(() => autoGrow(ta));
+  return ta;
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 1 — GAME PLAN
+// ═══════════════════════════════════════════════════════
+
+function renderGamePlan() {
+  const grid = document.getElementById('gameplan-grid');
+  grid.innerHTML = '';
+  categories.forEach((cat, ci) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.borderTopColor = cat.color;
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon" style="background:${cat.color}">${cat.icon}</div>
+        <span class="card-title" style="color:${cat.color}">${cat.label}</span>
+      </div>
+      <ul class="move-list" id="cat-${ci}-list"></ul>
+      <button class="add-btn" style="border-color:${cat.color}66;color:${cat.color}"
+        onclick="addMove(${ci})">+ Add move</button>
+    `;
+    grid.appendChild(card);
+    renderMoves(ci);
+  });
+}
+
+function renderMoves(ci) {
+  const list = document.getElementById(`cat-${ci}-list`);
+  if (!list) return;
+  list.innerHTML = '';
+  const cat = categories[ci];
+  cat.moves.forEach((move, mi) => {
+    const li = document.createElement('li');
+    li.className = 'move-item';
+
+    const bullet = document.createElement('span');
+    bullet.className = 'move-bullet';
+    bullet.style.color = cat.color;
+    bullet.textContent = '◆';
+
+    const ta = makeTextarea(move, val => { categories[ci].moves[mi] = val; save(); }, cat.color);
+
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.textContent = '✕';
+    btn.onclick = () => removeMove(ci, mi);
+
+    li.appendChild(bullet);
+    li.appendChild(ta);
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+}
+
+function addMove(ci) {
+  categories[ci].moves.push('');
+  renderMoves(ci); save();
+  focusLastTA(`cat-${ci}-list`);
+}
+
+function removeMove(ci, mi) {
+  categories[ci].moves.splice(mi, 1);
+  renderMoves(ci); save();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 2 — POSITIONS
+// ═══════════════════════════════════════════════════════
+
+function renderPositions() {
+  const grid = document.getElementById('positions-grid');
+  grid.innerHTML = '';
+  positions.forEach((pos, pi) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.borderTopColor = pos.color;
+    card.innerHTML = `
+      <div class="card-header">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;
+          background:${pos.color};box-shadow:0 0 6px ${pos.color};flex-shrink:0"></span>
+        <span class="card-title" style="color:${pos.color}">${pos.label}</span>
+      </div>
+      <div id="pos-${pi}-opts"></div>
+      <button class="add-btn" style="border-color:${pos.color}55;color:${pos.color}"
+        onclick="addOption(${pi})">+ Add option</button>
+    `;
+    grid.appendChild(card);
+    renderOptions(pi);
+  });
+}
+
+function renderOptions(pi) {
+  const container = document.getElementById(`pos-${pi}-opts`);
+  if (!container) return;
+  container.innerHTML = '';
+  const pos = positions[pi];
+  pos.options.forEach((opt, oi) => {
+    const row = document.createElement('div');
+    row.className = 'pos-option';
+
+    const arrow = document.createElement('span');
+    arrow.className = 'pos-arrow';
+    arrow.style.color = pos.color;
+    arrow.textContent = '▶';
+
+    const ta = makeTextarea(opt, val => { positions[pi].options[oi] = val; save(); }, pos.color);
+
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.textContent = '✕';
+    btn.onclick = () => removeOption(pi, oi);
+
+    row.appendChild(arrow);
+    row.appendChild(ta);
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+}
+
+function addOption(pi) {
+  positions[pi].options.push('');
+  renderOptions(pi); save();
+  focusLastTA(`pos-${pi}-opts`);
+}
+
+function removeOption(pi, oi) {
+  positions[pi].options.splice(oi, 1);
+  renderOptions(pi); save();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 3 — ESCAPES
+// ═══════════════════════════════════════════════════════
+
+function renderEscapes() {
+  const grid = document.getElementById('escapes-grid');
+  grid.innerHTML = '';
+  escapes.forEach((esc, ei) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.borderTopColor = esc.color;
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon"
+          style="background:${esc.color};font-size:0.5rem;font-weight:900;color:#0d0d0d;letter-spacing:0">ESC</div>
+        <span class="card-title" style="color:${esc.color}">${esc.label}</span>
+      </div>
+      <div class="escape-sublabel" style="color:${esc.color}">${esc.sublabel}</div>
+      <ul class="move-list" id="esc-${ei}-list"></ul>
+      <button class="add-btn" style="border-color:${esc.color}55;color:${esc.color}"
+        onclick="addEscape(${ei})">+ Add escape</button>
+    `;
+    grid.appendChild(card);
+    renderEscapeMoves(ei);
+  });
+}
+
+function renderEscapeMoves(ei) {
+  const list = document.getElementById(`esc-${ei}-list`);
+  if (!list) return;
+  list.innerHTML = '';
+  const esc = escapes[ei];
+  esc.moves.forEach((move, mi) => {
+    const li = document.createElement('li');
+    li.className = 'move-item';
+
+    const bullet = document.createElement('span');
+    bullet.className = 'move-bullet';
+    bullet.style.color = esc.color;
+    bullet.textContent = '◆';
+
+    const ta = makeTextarea(move, val => { escapes[ei].moves[mi] = val; save(); }, esc.color);
+
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.textContent = '✕';
+    btn.onclick = () => removeEscape(ei, mi);
+
+    li.appendChild(bullet);
+    li.appendChild(ta);
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+}
+
+function addEscape(ei) {
+  escapes[ei].moves.push('');
+  renderEscapeMoves(ei); save();
+  focusLastTA(`esc-${ei}-list`);
+}
+
+function removeEscape(ei, mi) {
+  escapes[ei].moves.splice(mi, 1);
+  renderEscapeMoves(ei); save();
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARED UTILS
+// ═══════════════════════════════════════════════════════
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  // Re-grow all textareas in the newly visible tab
+  setTimeout(() => {
+    document.getElementById('tab-' + name).querySelectorAll('textarea').forEach(autoGrow);
+  }, 30);
+}
+
+function focusLastTA(containerId) {
+  setTimeout(() => {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const tas = c.querySelectorAll('textarea');
+    const last = tas[tas.length - 1];
+    if (last) { last.focus(); last.select(); }
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+renderGamePlan();
+renderPositions();
+renderEscapes();
+</script>
+</body>
+</html>
