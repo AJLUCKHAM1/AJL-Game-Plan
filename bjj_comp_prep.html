@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BJJ Comp Prep">
+<meta name="theme-color" content="#0f0f0f">
+<title>BJJ Comp Prep — 20 June 2026</title>
+<style>
+:root {
+  --bg:#0f0f0f; --bg2:#1a1a1a; --bg3:#242424;
+  --border:rgba(255,255,255,0.1); --border2:rgba(255,255,255,0.2);
+  --text:#f0f0f0; --text2:#999; --text3:#555;
+  --blue:#378ADD; --blue-bg:#0c2a45; --blue-text:#85B7EB;
+  --coral:#D85A30; --coral-bg:#3a1a0c; --coral-text:#F0997B;
+  --amber:#BA7517; --amber-bg:#2e1c04; --amber-text:#FAC775;
+  --green:#3B6D11; --green-bg:#192e07; --green-text:#97C459;
+  --purple:#534AB7; --purple-bg:#1d1b3a; --purple-text:#AFA9EC;
+  --radius:10px; --radius-sm:7px;
+  --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;}
+.app-shell{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
+.header{padding:14px 18px 10px;background:var(--bg);border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.header-row{display:flex;align-items:baseline;justify-content:space-between;}
+.header h1{font-size:18px;font-weight:600;}
+.comp-date{font-size:12px;color:var(--text2);margin-top:1px;}
+.days-badge{font-size:12px;font-weight:600;background:var(--blue-bg);color:var(--blue-text);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 18px;flex-shrink:0;}
+.stat{background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;}
+.stat-label{font-size:10px;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;}
+.stat-value{font-size:18px;font-weight:600;}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.tab-bar{display:flex;padding:0 18px;background:var(--bg);border-bottom:0.5px solid var(--border);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab-btn{font-size:13px;padding:10px 14px;color:var(--text2);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-weight:500;}
+.tab-btn.active{color:var(--blue-text);border-bottom-color:var(--blue);}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 18px;}
+.week-block{margin-bottom:22px;}
+.week-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.week-label{font-size:14px;font-weight:600;}
+.phase-pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;}
+.pill-build{background:var(--blue-bg);color:var(--blue-text);}
+.pill-sharpen{background:var(--amber-bg);color:var(--amber-text);}
+.pill-peak{background:var(--coral-bg);color:var(--coral-text);}
+.pill-taper{background:var(--green-bg);color:var(--green-text);}
+.load-wrap{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.load-lbl{font-size:10px;color:var(--text3);}
+.load-bg{width:60px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.load-fill{height:100%;border-radius:2px;}
+.session-list{display:flex;flex-direction:column;gap:6px;}
+.sess{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:11px 12px;display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;}
+.sess.is-done{opacity:.4;}
+.sess.is-rest{background:var(--bg);border-color:transparent;}
+.sess.is-flex{border-style:dashed;border-color:var(--amber);}
+.sess.is-today{border-color:var(--blue);border-width:1px;}
+.type-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.sess-mid{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.sess-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.type-lbl{font-size:11px;color:var(--text2);font-weight:600;}
+.badge{font-size:10px;padding:1px 7px;border-radius:20px;font-weight:500;}
+.badge-key{background:var(--blue-bg);color:var(--blue-text);}
+.badge-rest{background:var(--bg3);color:var(--text3);}
+.badge-3min{background:var(--purple-bg);color:var(--purple-text);}
+.badge-flex{background:var(--amber-bg);color:var(--amber-text);}
+.badge-today{background:var(--blue);color:#fff;}
+.sess-desc{font-size:13px;color:var(--text);line-height:1.4;word-break:break-word;}
+.edit-row{display:flex;align-items:center;gap:6px;margin-top:1px;}
+.edit-btn{font-size:10px;color:var(--text3);background:transparent;border:0.5px solid var(--border);border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;}
+.edit-btn:active{background:var(--bg3);}
+.desc-editor{display:none;flex-direction:column;gap:7px;margin-top:4px;}
+.desc-editor.open{display:flex;}
+.desc-textarea{font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;line-height:1.45;resize:none;font-family:inherit;width:100%;}
+.desc-textarea:focus{outline:none;border-color:var(--blue);}
+.editor-btns{display:flex;gap:8px;}
+.btn-save{font-size:12px;padding:6px 16px;border-radius:var(--radius-sm);border:none;background:var(--blue);color:#fff;cursor:pointer;font-weight:600;font-family:inherit;}
+.btn-cancel{font-size:12px;padding:6px 12px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;}
+.sess-foot{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.fixed-day{font-size:11px;color:var(--text3);}
+.date-pick{font-size:12px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg3);color:var(--text);-webkit-appearance:none;appearance:none;}
+.date-pick:focus{outline:none;border-color:var(--blue);}
+.chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.chk.on{background:var(--green);border-color:var(--green);}
+.chk svg{display:none;}
+.chk.on svg{display:block;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+.info-note{font-size:12px;color:var(--text2);padding:9px 13px;margin-bottom:14px;border-left:3px solid var(--amber);background:var(--bg2);}
+.ruleset-banner{background:var(--coral-bg);border:0.5px solid rgba(216,90,48,.4);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--coral-text);line-height:1.55;}
+.ruleset-banner strong{font-weight:700;display:block;margin-bottom:3px;font-size:13px;}
+.gp-section-hdr{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:0 2px;margin-bottom:6px;margin-top:16px;}
+.gp-section-hdr:first-of-type{margin-top:0;}
+.gp-grid{display:flex;flex-direction:column;gap:8px;}
+.gp-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.gp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.gp-title{font-size:13px;font-weight:600;}
+.gp-status{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;flex-shrink:0;}
+.s-refine{background:var(--amber-bg);color:var(--amber-text);}
+.s-sharp{background:var(--blue-bg);color:var(--blue-text);}
+.s-ready{background:var(--green-bg);color:var(--green-text);}
+.gp-item{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);cursor:pointer;line-height:1.35;}
+.gp-item:last-of-type{border-bottom:none;}
+.gp-item.done-item{color:var(--text3);text-decoration:line-through;}
+.gp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.prog-bg{width:100%;height:3px;background:var(--bg3);border-radius:2px;margin-top:10px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;background:var(--green);}
+.match-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;}
+.match-title{font-size:13px;font-weight:600;margin-bottom:10px;}
+.match-item{font-size:13px;color:var(--text);padding:5px 0;border-bottom:0.5px solid var(--border);display:flex;gap:8px;align-items:flex-start;line-height:1.45;}
+.match-item:last-child{border-bottom:none;}
+.mi-num{font-size:11px;color:var(--text3);min-width:14px;padding-top:1px;}
+.cl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border);font-size:14px;cursor:pointer;line-height:1.35;}
+.cl-item:last-child{border-bottom:none;}
+.cl-item.done-cl{color:var(--text3);text-decoration:line-through;}
+.section-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="header">
+    <div class="header-row">
+      <h1>BJJ Comp Prep</h1>
+      <span class="days-badge" id="days-badge">—</span>
+    </div>
+    <div class="comp-date">20 June 2026 &middot; NAGA Kids Intermediate &middot; 3-min matches</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-label">Sessions</div>
+      <div class="stat-value"><span id="sess-done">0</span><span style="font-size:13px;color:var(--text3);">/<span id="sess-total">0</span></span></div>
+      <div class="stat-sub">logged</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Game plan</div>
+      <div class="stat-value" id="gp-pct">0%</div>
+      <div class="stat-sub" id="gp-sub">items sharp</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Phase</div>
+      <div class="stat-value" style="font-size:14px;padding-top:2px;" id="phase-val">—</div>
+      <div class="stat-sub" id="phase-sub"></div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('cal')">Calendar</button>
+    <button class="tab-btn" onclick="showTab('gp')">Game plan</button>
+    <button class="tab-btn" onclick="showTab('match')">Match tactics</button>
+    <button class="tab-btn" onclick="showTab('comp')">Comp day</button>
+  </div>
+
+  <div class="scroll-area">
+
+    <div class="tab-panel active" id="tab-cal">
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>Gi class</div>
+        <div class="leg"><div class="leg-dot" style="background:#D85A30"></div>No-gi</div>
+        <div class="leg"><div class="leg-dot" style="background:#854F0B"></div>Open mat</div>
+        <div class="leg"><div class="leg-dot" style="background:#3B6D11"></div>Home drilling</div>
+        <div class="leg"><div class="leg-dot" style="background:#534AB7"></div>Gym</div>
+      </div>
+      <div class="info-note">Dashed sessions are flexible — pick your date. Tap <strong>Edit</strong> on any session to update the topic after class.</div>
+      <div id="cal-body"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-gp">
+      <div class="ruleset-banner">
+        <strong>NAGA Kids Intermediate — allowed techniques</strong>
+        Takedowns &middot; Guard passes &middot; Sweeps &middot; Pins &middot; Chokes &middot; Armlocks &middot; Wristlocks<br>
+        <span style="opacity:.7;">No leg locks &middot; No heel hooks &middot; No knee reaping &middot; No cervical locks</span>
+      </div>
+      <div class="section-note">Tap any item to mark it sharp. Work through these across your sessions before comp day.</div>
+      <div id="gp-body"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-match">
+      <div id="match-body"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-comp">
+      <div class="section-note">Work through this the evening before and morning of the comp.</div>
+      <div id="comp-body"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const COMP = new Date('2026-06-20');
+
+/* ── CALENDAR DATA
+   Week 1: 19–25 May   (Tue Gi, Sat Gi, Fri No-gi, Sun open mat)
+   Week 2: 26 May–1 Jun (Mon open mat 26 May, Tue Gi, Fri No-gi, Sun open mat 1 Jun)
+   Week 3:  2–8 Jun    (Tue Gi, Fri No-gi, Sat Gi alt, Sun open mat 8 Jun)
+   Week 4:  9–20 Jun   (Tue Gi, Fri No-gi, Sun open mat 15 Jun — then taper to comp)
+────────────────────────────────────────────────────────────────────────────── */
+const WEEKS = [
+  {
+    label:'Week 1 \u2014 19\u201325 May', phase:'build', pillClass:'pill-build', load:.7,
+    sessions:[
+      {id:'w1gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-19', fixed:'Tue 19 May',
+       desc:'Ai Yotsu grip fight + snapdown entries to double or single leg'},
+      {id:'w1gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-05-23', fixed:'Sat 23 May',
+       desc:'Guard passing: torreando + knee cut positional rounds'},
+      {id:'w1home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
+       desc:'Scissor sweep \xd750 + hip bump \xd750 from closed guard'},
+      {id:'w1nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-05-22', fixed:'Fri 22 May',
+       desc:'Double leg + single leg entries from clinch \u2014 no-gi grips'},
+      {id:'w1gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
+       desc:'Strength \u2014 posterior chain, pull movements'},
+    ]
+  },
+  {
+    label:'Week 2 \u2014 26 May\u20131 Jun', phase:'build', pillClass:'pill-build', load:.78,
+    sessions:[
+      {id:'w2open0',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-05-25', fixed:'Mon 26 May',
+       desc:'Live rounds \u2014 test guard passing and closed guard sweeps'},
+      {id:'w2gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-26', fixed:'Tue 27 May',
+       desc:'Kenka Yotsu: collar drag to back + Kouchi Gari entries'},
+      {id:'w2home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
+       desc:'Torreando \xd730 + knee cut \xd730 passing reps'},
+      {id:'w2nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-05-29', fixed:'Fri 29 May',
+       desc:'Ouchi Gari + Kouchi Gari from clinch \u2014 no-gi grip variation'},
+      {id:'w2gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
+       desc:'Power work \u2014 low volume, no next-day soreness'},
+      {id:'w2open1',dot:'#854F0B', type:'Open mat',      badge:'',     date:'2026-06-01', fixed:'Sun 1 Jun',
+       desc:'Live rounds \u2014 Ai vs Kenka Yotsu scenarios, stay technical'},
+    ]
+  },
+  {
+    label:'Week 3 \u2014 2\u20138 Jun', phase:'sharpen', pillClass:'pill-sharpen', load:.85,
+    sessions:[
+      {id:'w3gi1',  dot:'#378ADD', type:'Gi class',      badge:'3min', date:'2026-06-02', fixed:'Tue 2 Jun',
+       desc:'Comp-pace 3-min rounds \u2014 score awareness, takedown to pass sequences'},
+      {id:'w3gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-06-06', fixed:'Sat 6 Jun',
+       desc:'Passing vs closed guard + half guard positional rounds'},
+      {id:'w3home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
+       desc:'Mounted armbar \xd730 + RNC finish \xd730 \u2014 tighten the details'},
+      {id:'w3nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-06-05', fixed:'Fri 5 Jun',
+       desc:'Full game plan run-through \u2014 both Ai and Kenka Yotsu scenarios'},
+      {id:'w3gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
+       desc:'Maintenance only \u2014 short session, nothing new'},
+      {id:'w3open1',dot:'#854F0B', type:'Open mat',      badge:'3min', date:'2026-06-08', fixed:'Sun 8 Jun',
+       desc:'Comp simulation \u2014 3-min rounds, points scored, ref decisions'},
+    ]
+  },
+  {
+    label:'Week 4 \u2014 9\u201315 Jun', phase:'peak', pillClass:'pill-peak', load:.75,
+    sessions:[
+      {id:'w4gi1',  dot:'#378ADD', type:'Gi class',      badge:'3min', date:'2026-06-09', fixed:'Tue 9 Jun',
+       desc:'Full 3-min comp simulation \u2014 A-game only, ref scored'},
+      {id:'w4home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
+       desc:'Triangle + armbar conversion \xd720 \u2014 sharpen from closed guard'},
+      {id:'w4nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-06-12', fixed:'Fri 12 Jun',
+       desc:'Game plan run-through at match pace \u2014 no experimenting'},
+      {id:'w4gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
+       desc:'Final gym session \u2014 very short, just maintain'},
+      {id:'w4open1',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-06-15', fixed:'Sun 15 Jun',
+       desc:'Last hard session \u2014 trust the game plan, keep it controlled'},
+    ]
+  },
+  {
+    label:'Week 5 \u2014 taper (16\u201320 Jun)', phase:'taper', pillClass:'pill-taper', load:.3,
+    sessions:[
+      {id:'w5gi1',  dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-06-16', fixed:'Tue 16 Jun',
+       desc:'Light technical flow rolling only \u2014 no hard rounds'},
+      {id:'w5home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
+       desc:'Visualisation + light movement \u2014 15 min max, gi and no-gi'},
+      {id:'w5nogi1',dot:'#D85A30', type:'No-gi class',   badge:'rest', date:'2026-06-19', fixed:'Fri 19 Jun',
+       desc:'Day before comp \u2014 skip or light movement only. Rest.'},
+      {id:'w5rest1', dot:'#555',   type:'Rest',           badge:'rest', date:'2026-06-19', fixed:'Sat 19 Jun',
+       desc:'Kit packed, carb-load dinner, early night'},
+      {id:'w5comp',  dot:'#D85A30', type:'Competition',  badge:'rest', date:'2026-06-20', fixed:'Sat 20 Jun',
+       desc:'NAGA Kids Intermediate \u2014 comp day. Go time.'},
+    ]
+  },
+];
+
+const GAME_PLAN = [
+  {
+    section:'Takedowns',
+    cards:[
+      {id:'td1', cat:'Ai Yotsu (same-side grip)', color:'#378ADD', status:'sharp', items:[
+        'Snapdown \u2014 break posture, react off their reset',
+        'Double leg off snapdown reaction \u2014 level change, drive',
+        'Single leg \u2014 inside trip finish or run the pipe',
+        'Ouchi Gari \u2014 off-balance then load the hip',
+      ]},
+      {id:'td2', cat:'Kenka Yotsu (opposite grip)', color:'#378ADD', status:'refine', items:[
+        'Collar drag to back step \u2014 pull, pivot, go behind',
+        'Kouchi Gari off collar drag threat',
+        'O Goshi \u2014 break posture, hip load, off-balance to throw',
+      ]},
+    ]
+  },
+  {
+    section:'Guard passes',
+    cards:[
+      {id:'gp1', cat:'Primary passes', color:'#854F0B', status:'sharp', items:[
+        'Torreando \u2014 push knees, circle wide to side control',
+        'Knee cut \u2014 knee through, hip switch, settle top pressure',
+        'Side smash \u2014 flatten, hip to hip, drive through',
+        'Baby bolo \u2014 stack and rotate to side control',
+      ]},
+    ]
+  },
+  {
+    section:'Guard \u2014 sweeps',
+    cards:[
+      {id:'sw1', cat:'Closed guard sweeps', color:'#534AB7', status:'refine', items:[
+        'Scissor sweep \u2014 off failed posture break or arm post',
+        'Hip bump sweep \u2014 off triangle or armbar threat',
+        'Lumberjack \u2014 when they base wide to stuff scissor',
+      ]},
+      {id:'sw2', cat:'Half guard', color:'#534AB7', status:'refine', items:[
+        'Half guard sweep to top \u2014 underhook and come up',
+        'Half guard back take when they try to flatten',
+      ]},
+    ]
+  },
+  {
+    section:'Submissions',
+    cards:[
+      {id:'sub1', cat:'From top', color:'#D85A30', status:'ready', items:[
+        'Mounted armbar \u2014 walk up, pinch knees, extend clean',
+        'Americana from side control or mount',
+        'RNC \u2014 seatbelt, hooks in, squeeze and tuck chin',
+      ]},
+      {id:'sub2', cat:'From guard', color:'#D85A30', status:'refine', items:[
+        'Triangle \u2014 off hip bump or failed armbar attempt',
+        'Triangle to armbar conversion if they defend posture',
+      ]},
+    ]
+  },
+  {
+    section:'Match tactics',
+    cards:[
+      {id:'tac1', cat:'3-min format', color:'#D85A30', status:'refine', items:[
+        'Score first \u2014 takedown or sweep in first 45 sec',
+        'If up after 90 sec: grind legally, force scrambles',
+        'If down: pull closed guard, hunt triangle or hip bump',
+        'Advantage hunt: all near-subs and partial sweeps count',
+      ]},
+    ]
+  },
+];
+
+const MATCH_STRATEGY = [
+  {title:'Opening \u2014 grip fight plan', items:[
+    'Ai Yotsu: snap the head down immediately, react off their reset with double or single leg.',
+    'Kenka Yotsu: collar drag is your threat \u2014 even faking it opens Kouchi Gari and O Goshi.',
+    'If they pull guard: stand in posture, set up torreando or knee cut right away.',
+    'If you pull guard: break posture, close guard, set up scissor or hip bump.',
+  ]},
+  {title:'NAGA Kids Intermediate \u2014 points and rules', items:[
+    'Takedown 2pts \u00b7 Sweep 2pts \u00b7 Guard pass 3pts \u00b7 Back control 4pts \u00b7 Mount 4pts.',
+    'Submissions: chokes, armlocks and wristlocks only. No leg locks of any kind.',
+    'Near-submissions and partial sweeps score advantages \u2014 always finish the attempt.',
+    'Match won by submission, points, or referee\u2019s decision on advantages.',
+  ]},
+  {title:'Mid-match adjustments', items:[
+    'If passing is failing: slow down, re-grip, reset to torreando \u2014 don\u2019t force.',
+    'If stuck in their guard: keep posture, look for baby bolo or stand to pass.',
+    'If on your back: closed guard first, isolate one arm, hunt triangle or hip bump.',
+    'Back control secured: seatbelt immediately, both hooks in, work RNC patiently.',
+  ]},
+  {title:'Between matches', items:[
+    '10 min minimum to reset \u2014 walk, breathe, don\u2019t sit and stiffen up.',
+    'Light carbs + water within 5 min of leaving the mat.',
+    'Review one thing that didn\u2019t work, adjust the plan, then blank it.',
+    'Don\u2019t watch other brackets \u2014 stay in your own head.',
+  ]},
+];
+
+const COMP_CHECKLIST = [
+  'Gi(s) washed and ironed the night before',
+  'Rashguard + shorts packed for no-gi',
+  'Mouthguard packed',
+  'Ear guards if needed',
+  'Weight checked morning of comp',
+  'High-carb meal the evening before',
+  'Light breakfast 2\u20133 hrs before weigh-in',
+  'Competition warmup plan ready (15 min)',
+  'Mental cue word set',
+  'Towel, flip-flops, spare kit in bag',
+  'Recovery snacks + electrolytes packed',
+  'Competition schedule and brackets checked',
+  'Coach or training partner contact confirmed',
+];
+
+let sessState={}, gpState={}, flexDates={}, clState={}, customDescs={};
+function loadState(){
+  try{sessState=JSON.parse(localStorage.getItem('bjj_sess')||'{}');}catch(e){}
+  try{gpState=JSON.parse(localStorage.getItem('bjj_gp')||'{}');}catch(e){}
+  try{flexDates=JSON.parse(localStorage.getItem('bjj_dates')||'{}');}catch(e){}
+  try{clState=JSON.parse(localStorage.getItem('bjj_cl')||'{}');}catch(e){}
+  try{customDescs=JSON.parse(localStorage.getItem('bjj_descs')||'{}');}catch(e){}
+}
+function persist(){
+  try{localStorage.setItem('bjj_sess',JSON.stringify(sessState));}catch(e){}
+  try{localStorage.setItem('bjj_gp',JSON.stringify(gpState));}catch(e){}
+  try{localStorage.setItem('bjj_dates',JSON.stringify(flexDates));}catch(e){}
+  try{localStorage.setItem('bjj_cl',JSON.stringify(clState));}catch(e){}
+  try{localStorage.setItem('bjj_descs',JSON.stringify(customDescs));}catch(e){}
+}
+function getDesc(id,fb){ return (customDescs[id]!==undefined&&customDescs[id]!==null)?customDescs[id]:fb; }
+
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function updateStats(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  const diff=Math.ceil((COMP-now)/(1000*60*60*24));
+  document.getElementById('days-badge').textContent=(diff>0?diff:'0')+' days';
+  let total=0,done=0;
+  WEEKS.forEach(w=>w.sessions.forEach(s=>{if(s.badge!=='rest'){total++;if(sessState[s.id])done++;}}));
+  document.getElementById('sess-done').textContent=done;
+  document.getElementById('sess-total').textContent=total;
+  let gpT=0,gpD=0;
+  GAME_PLAN.forEach(sec=>sec.cards.forEach(g=>g.items.forEach((_,i)=>{gpT++;if(gpState[g.id+'_'+i])gpD++;})));
+  const pct=gpT?Math.round(gpD/gpT*100):0;
+  document.getElementById('gp-pct').textContent=pct+'%';
+  document.getElementById('gp-sub').textContent=gpD+' of '+gpT+' sharp';
+  const d=diff;
+  let phase,sub;
+  if(d>28){phase='Build';sub='5+ weeks out';}
+  else if(d>21){phase='Build';sub='4 weeks out';}
+  else if(d>14){phase='Sharpen';sub='3 weeks out';}
+  else if(d>7){phase='Peak';sub='2 weeks out';}
+  else if(d>0){phase='Taper';sub='Final week';}
+  else{phase='Fight!';sub='Comp day';}
+  document.getElementById('phase-val').textContent=phase;
+  document.getElementById('phase-sub').textContent=sub;
+}
+
+function chkSVG(){ return '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+
+function renderCalendar(){
+  const body=document.getElementById('cal-body');
+  const today=todayStr();
+  body.innerHTML='';
+  WEEKS.forEach(w=>{
+    const lp=Math.round(w.load*100);
+    const lc=w.load<.5?'#3B6D11':w.load<.8?'#BA7517':'#D85A30';
+    let html=`<div class="week-block">
+      <div class="week-hdr">
+        <span class="week-label">${w.label}</span>
+        <span class="phase-pill ${w.pillClass}">${w.phase}</span>
+        <div class="load-wrap">
+          <span class="load-lbl">load ${lp}%</span>
+          <div class="load-bg"><div class="load-fill" style="width:${lp}%;background:${lc}"></div></div>
+        </div>
+      </div>
+      <div class="session-list">`;
+
+    w.sessions.forEach(s=>{
+      const isDone=!!sessState[s.id];
+      const isRest=s.badge==='rest';
+      const isFlex=!!s.flex;
+      const isToday=!isFlex&&s.date===today;
+      const desc=getDesc(s.id,s.desc);
+
+      let badgeHtml='';
+      if(isToday) badgeHtml='<span class="badge badge-today">today</span>';
+      else if(s.badge==='key') badgeHtml='<span class="badge badge-key">key</span>';
+      else if(s.badge==='3min') badgeHtml='<span class="badge badge-3min">3-min sims</span>';
+      else if(s.badge==='rest') badgeHtml='<span class="badge badge-rest">rest</span>';
+      else if(isFlex) badgeHtml='<span class="badge badge-flex">flexible</span>';
+
+      const dateHtml=isRest
+        ?`<span class="fixed-day">${s.fixed}</span>`
+        :isFlex
+          ?`<input type="date" class="date-pick" value="${flexDates[s.id]||''}" onchange="saveDate('${s.id}',this.value)">`
+          :`<span class="fixed-day">${s.fixed}</span>`;
+
+      const chkHtml=isRest?''
+        :`<div class="chk${isDone?' on':''}" onclick="toggleSess('${s.id}',this)" aria-label="Mark done">${chkSVG()}</div>`;
+
+      const descSection=isRest
+        ?`<span class="sess-desc">${desc}</span>`
+        :`<span class="sess-desc" id="desc-${s.id}">${desc}</span>
+          <div class="edit-row"><button class="edit-btn" onclick="openEditor('${s.id}')">Edit</button></div>
+          <div class="desc-editor" id="editor-${s.id}">
+            <textarea class="desc-textarea" id="ta-${s.id}" rows="2">${desc}</textarea>
+            <div class="editor-btns">
+              <button class="btn-save" onclick="saveDescField('${s.id}')">Save</button>
+              <button class="btn-cancel" onclick="closeEditor('${s.id}')">Cancel</button>
+            </div>
+          </div>`;
+
+      html+=`<div class="sess${isDone?' is-done':''}${isRest?' is-rest':''}${isFlex?' is-flex':''}${isToday?' is-today':''}">
+        <div class="type-dot" style="background:${s.dot}"></div>
+        <div class="sess-mid">
+          <div class="sess-top"><span class="type-lbl">${s.type}</span>${badgeHtml}</div>
+          ${descSection}
+          <div class="sess-foot">${dateHtml}</div>
+        </div>
+        ${chkHtml}
+      </div>`;
+    });
+
+    html+='</div></div>';
+    body.innerHTML+=html;
+  });
+}
+
+function openEditor(id){
+  const ta=document.getElementById('ta-'+id);
+  ta.value=document.getElementById('desc-'+id).textContent;
+  document.getElementById('editor-'+id).classList.add('open');
+  ta.focus();
+}
+function closeEditor(id){ document.getElementById('editor-'+id).classList.remove('open'); }
+function saveDescField(id){
+  const val=document.getElementById('ta-'+id).value.trim();
+  customDescs[id]=val; persist();
+  document.getElementById('desc-'+id).textContent=val||'(no description)';
+  closeEditor(id);
+}
+function saveDate(id,val){ flexDates[id]=val; persist(); }
+function toggleSess(id,el){
+  sessState[id]=!sessState[id]; persist();
+  el.classList.toggle('on',sessState[id]);
+  el.closest('.sess').classList.toggle('is-done',sessState[id]);
+  updateStats();
+}
+
+function renderGamePlan(){
+  const body=document.getElementById('gp-body');
+  body.innerHTML='';
+  GAME_PLAN.forEach(sec=>{
+    body.innerHTML+=`<div class="gp-section-hdr">${sec.section}</div>`;
+    let html='<div class="gp-grid">';
+    sec.cards.forEach(g=>{
+      const dc=g.items.filter((_,i)=>gpState[g.id+'_'+i]).length;
+      const allDone=dc===g.items.length;
+      const sl=allDone?'ready':g.status;
+      const sc=sl==='ready'?'s-ready':sl==='sharp'?'s-sharp':'s-refine';
+      const prog=Math.round(dc/g.items.length*100);
+      html+=`<div class="gp-card">
+        <div class="gp-head"><span class="gp-title">${g.cat}</span><span class="gp-status ${sc}">${sl}</span></div>
+        ${g.items.map((item,i)=>{
+          const d=!!gpState[g.id+'_'+i];
+          return `<div class="gp-item${d?' done-item':''}" onclick="toggleGp('${g.id}',${i},this)">
+            <div class="gp-dot" style="background:${g.color}"></div><span>${item}</span></div>`;
+        }).join('')}
+        <div class="prog-bg"><div class="prog-fill" style="width:${prog}%"></div></div>
+      </div>`;
+    });
+    html+='</div>';
+    body.innerHTML+=html;
+  });
+}
+
+function toggleGp(gid,idx,el){
+  const key=gid+'_'+idx; gpState[key]=!gpState[key]; persist();
+  el.classList.toggle('done-item',gpState[key]);
+  updateStats(); renderGamePlan();
+}
+
+function renderMatch(){
+  document.getElementById('match-body').innerHTML=MATCH_STRATEGY.map(m=>`
+    <div class="match-card">
+      <div class="match-title">${m.title}</div>
+      ${m.items.map((it,i)=>`<div class="match-item"><span class="mi-num">${i+1}.</span><span>${it}</span></div>`).join('')}
+    </div>`).join('');
+}
+
+function renderComp(){
+  document.getElementById('comp-body').innerHTML=COMP_CHECKLIST.map((item,i)=>{
+    const d=!!clState['cl_'+i];
+    return `<div class="cl-item${d?' done-cl':''}" onclick="toggleCl(${i},this)">
+      <div class="chk${d?' on':''}">${chkSVG()}</div><span>${item}</span></div>`;
+  }).join('');
+}
+function toggleCl(i,el){
+  const key='cl_'+i; clState[key]=!clState[key]; persist();
+  el.classList.toggle('done-cl',clState[key]);
+  el.querySelector('.chk').classList.toggle('on',clState[key]);
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  ['cal','gp','match','comp'].forEach((t,i)=>{
+    if(t===name) document.querySelectorAll('.tab-btn')[i].classList.add('active');
+  });
+}
+
+loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
+</script>
+</body>
+</html>
