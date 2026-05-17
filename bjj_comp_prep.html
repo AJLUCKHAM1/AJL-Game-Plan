@@ -119,6 +119,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .section-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
+.add-sess-btn{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text3);background:transparent;border:0.5px dashed var(--border2);border-radius:var(--radius);padding:9px 14px;cursor:pointer;width:100%;font-family:inherit;margin-top:4px;}
+.add-sess-btn:active{background:var(--bg2);}
+.add-sess-form{background:var(--bg2);border:0.5px solid var(--blue);border-radius:var(--radius);padding:12px 14px;margin-top:4px;display:none;flex-direction:column;gap:10px;}
+.add-sess-form.open{display:flex;}
+.form-row{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:11px;color:var(--text2);font-weight:600;}
+.form-select,.form-input{font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;font-family:inherit;width:100%;-webkit-appearance:none;appearance:none;}
+.form-select:focus,.form-input:focus{outline:none;border-color:var(--blue);}
+.form-btns{display:flex;gap:8px;}
+.edit-type-input{font-size:11px;color:var(--text2);font-weight:600;background:transparent;border:none;border-bottom:1px solid var(--border2);padding:0 2px;font-family:inherit;width:100%;max-width:140px;}
+.edit-type-input:focus{outline:none;border-color:var(--blue);}
+.del-btn{font-size:10px;color:var(--coral-text);background:transparent;border:0.5px solid rgba(216,90,48,.3);border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;margin-left:auto;}
+.del-btn:active{background:var(--coral-bg);}
 </style>
 </head>
 <body>
@@ -423,7 +436,11 @@ function updateStats(){
   const diff=Math.ceil((COMP-now)/(1000*60*60*24));
   document.getElementById('days-badge').textContent=(diff>0?diff:'0')+' days';
   let total=0,done=0;
-  WEEKS.forEach(w=>w.sessions.forEach(s=>{if(s.badge!=='rest'){total++;if(sessState[s.id])done++;}}));
+  WEEKS.forEach((w,wi)=>{
+    [...w.sessions,...(customSessions[wi]||[])].forEach(s=>{
+      if(s.badge!=='rest'){total++;if(sessState[s.id])done++;}
+    });
+  });
   document.getElementById('sess-done').textContent=done;
   document.getElementById('sess-total').textContent=total;
   let gpT=0,gpD=0;
@@ -445,14 +462,67 @@ function updateStats(){
 
 function chkSVG(){ return '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
 
+function sessCardHtml(s, wIdx, today){
+  const isDone=!!sessState[s.id];
+  const isRest=s.badge==='rest';
+  const isFlex=!!s.flex;
+  const isCustom=!!s.custom;
+  const isToday=!isFlex&&s.date===today;
+  const desc=getDesc(s.id,s.desc);
+  let badgeHtml='';
+  if(isToday) badgeHtml='<span class="badge badge-today">today</span>';
+  else if(s.badge==='key') badgeHtml='<span class="badge badge-key">key</span>';
+  else if(s.badge==='3min') badgeHtml='<span class="badge badge-3min">3-min sims</span>';
+  else if(s.badge==='rest') badgeHtml='<span class="badge badge-rest">rest</span>';
+  else if(isFlex||isCustom) badgeHtml='<span class="badge badge-flex">flexible</span>';
+  const dateHtml=isRest
+    ?`<span class="fixed-day">${s.fixed||''}</span>`
+    :(isFlex||isCustom)
+      ?`<input type="date" class="date-pick" value="${flexDates[s.id]||''}" onchange="saveDate('${s.id}',this.value)">`
+      :`<span class="fixed-day">${s.fixed}</span>`;
+  const chkHtml=isRest?''
+    :`<div class="chk${isDone?' on':''}" onclick="toggleSess('${s.id}',this)" aria-label="Mark done">${chkSVG()}</div>`;
+  const hasNotes=customDescs[s.id]!==undefined&&customDescs[s.id]!==null;
+  const notesBtnLabel=hasNotes?'Edit notes':'Add notes';
+  const typeLabelHtml=isCustom
+    ?`<input class="edit-type-input" id="typeinput-${s.id}" value="${s.type}" onchange="saveCustomType('${s.id}',this.value)">`
+    :`<span class="type-lbl">${s.type}</span>`;
+  const delHtml=isCustom
+    ?`<button class="del-btn" onclick="deleteCustomSess('${s.id}',${wIdx})">Remove</button>`
+    :'';
+  const descEditHtml=isRest?''
+    :`<div class="edit-row">
+        <button class="edit-btn" id="btn-${s.id}" onclick="openEditor('${s.id}')">${notesBtnLabel}</button>
+        ${delHtml}
+      </div>
+      <div class="desc-editor" id="editor-${s.id}">
+        <textarea class="desc-textarea" id="ta-${s.id}" rows="3" placeholder="What did you cover? Any notes...">${hasNotes?desc:''}</textarea>
+        <div class="editor-btns">
+          <button class="btn-save" onclick="saveDescField('${s.id}')">Save</button>
+          <button class="btn-cancel" onclick="closeEditor('${s.id}')">Cancel</button>
+        </div>
+      </div>`;
+  const descHtml=`<span class="sess-desc" id="desc-${s.id}">${desc}</span>`;
+  return `<div class="sess${isDone?' is-done':''}${isRest?' is-rest':''}${(isFlex||isCustom)?' is-flex':''}${isToday?' is-today':''}" id="sess-card-${s.id}">
+    <div class="type-dot" style="background:${s.dot}"></div>
+    <div class="sess-mid">
+      <div class="sess-top">${typeLabelHtml}${badgeHtml}</div>
+      ${descHtml}
+      ${descEditHtml}
+      <div class="sess-foot">${dateHtml}</div>
+    </div>
+    ${chkHtml}
+  </div>`;
+}
+
 function renderCalendar(){
   const body=document.getElementById('cal-body');
   const today=todayStr();
   body.innerHTML='';
-  WEEKS.forEach(w=>{
+  WEEKS.forEach((w,wIdx)=>{
     const lp=Math.round(w.load*100);
     const lc=w.load<.5?'#3B6D11':w.load<.8?'#BA7517':'#D85A30';
-    let html=`<div class="week-block">
+    let html=`<div class="week-block" id="week-block-${wIdx}">
       <div class="week-hdr">
         <span class="week-label">${w.label}</span>
         <span class="phase-pill ${w.pillClass}">${w.phase}</span>
@@ -461,57 +531,41 @@ function renderCalendar(){
           <div class="load-bg"><div class="load-fill" style="width:${lp}%;background:${lc}"></div></div>
         </div>
       </div>
-      <div class="session-list">`;
-
-    w.sessions.forEach(s=>{
-      const isDone=!!sessState[s.id];
-      const isRest=s.badge==='rest';
-      const isFlex=!!s.flex;
-      const isToday=!isFlex&&s.date===today;
-      const desc=getDesc(s.id,s.desc);
-
-      let badgeHtml='';
-      if(isToday) badgeHtml='<span class="badge badge-today">today</span>';
-      else if(s.badge==='key') badgeHtml='<span class="badge badge-key">key</span>';
-      else if(s.badge==='3min') badgeHtml='<span class="badge badge-3min">3-min sims</span>';
-      else if(s.badge==='rest') badgeHtml='<span class="badge badge-rest">rest</span>';
-      else if(isFlex) badgeHtml='<span class="badge badge-flex">flexible</span>';
-
-      const dateHtml=isRest
-        ?`<span class="fixed-day">${s.fixed}</span>`
-        :isFlex
-          ?`<input type="date" class="date-pick" value="${flexDates[s.id]||''}" onchange="saveDate('${s.id}',this.value)">`
-          :`<span class="fixed-day">${s.fixed}</span>`;
-
-      const chkHtml=isRest?''
-        :`<div class="chk${isDone?' on':''}" onclick="toggleSess('${s.id}',this)" aria-label="Mark done">${chkSVG()}</div>`;
-
-      const hasNotes = customDescs[s.id] !== undefined && customDescs[s.id] !== null;
-      const btnLabel = hasNotes ? 'Edit notes' : 'Add notes';
-      const descSection=isRest
-        ?`<span class="sess-desc">${desc}</span>`
-        :`<span class="sess-desc" id="desc-${s.id}">${desc}</span>
-          <div class="edit-row"><button class="edit-btn" id="btn-${s.id}" onclick="openEditor('${s.id}')">${btnLabel}</button></div>
-          <div class="desc-editor" id="editor-${s.id}">
-            <textarea class="desc-textarea" id="ta-${s.id}" rows="3" placeholder="What did you cover? Any notes to carry forward...">${hasNotes ? desc : ''}</textarea>
-            <div class="editor-btns">
-              <button class="btn-save" onclick="saveDescField('${s.id}')">Save</button>
-              <button class="btn-cancel" onclick="closeEditor('${s.id}')">Cancel</button>
-            </div>
-          </div>`;
-
-      html+=`<div class="sess${isDone?' is-done':''}${isRest?' is-rest':''}${isFlex?' is-flex':''}${isToday?' is-today':''}">
-        <div class="type-dot" style="background:${s.dot}"></div>
-        <div class="sess-mid">
-          <div class="sess-top"><span class="type-lbl">${s.type}</span>${badgeHtml}</div>
-          ${descSection}
-          <div class="sess-foot">${dateHtml}</div>
+      <div class="session-list" id="sess-list-${wIdx}">`;
+    const allSess=[...w.sessions,...(customSessions[wIdx]||[])];
+    allSess.forEach(s=>{ html+=sessCardHtml(s,wIdx,today); });
+    html+=`</div>
+      <button class="add-sess-btn" onclick="toggleAddForm(${wIdx})">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="2" x2="7" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add session
+      </button>
+      <div class="add-sess-form" id="add-form-${wIdx}">
+        <div class="form-row">
+          <label class="form-label">Session type</label>
+          <select class="form-select" id="new-type-${wIdx}">
+            <option value="Gi class">Gi class</option>
+            <option value="No-gi class">No-gi class</option>
+            <option value="Home drilling">Home drilling</option>
+            <option value="Open mat">Open mat</option>
+            <option value="Gym">Gym</option>
+            <option value="Extra drilling">Extra drilling</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
-        ${chkHtml}
-      </div>`;
-    });
-
-    html+='</div></div>';
+        <div class="form-row">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="new-date-${wIdx}">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Description (optional)</label>
+          <input type="text" class="form-input" id="new-desc-${wIdx}" placeholder="e.g. Extra drilling — scissor sweep">
+        </div>
+        <div class="form-btns">
+          <button class="btn-save" onclick="addCustomSess(${wIdx})">Add</button>
+          <button class="btn-cancel" onclick="toggleAddForm(${wIdx})">Cancel</button>
+        </div>
+      </div>
+    </div>`;
     body.innerHTML+=html;
   });
 }
@@ -609,6 +663,65 @@ function showTab(name){
   ['cal','gp','match','comp'].forEach((t,i)=>{
     if(t===name) document.querySelectorAll('.tab-btn')[i].classList.add('active');
   });
+}
+
+// Custom sessions store: { wIdx: [{id,type,dot,badge,flex,custom,date,desc}, ...] }
+let customSessions={};
+try{customSessions=JSON.parse(localStorage.getItem('bjj_custom')||'{}');
+  // restore numeric keys
+  const fixed={};
+  Object.keys(customSessions).forEach(k=>{ fixed[parseInt(k)]=customSessions[k]; });
+  customSessions=fixed;
+}catch(e){}
+
+function persistCustom(){
+  try{localStorage.setItem('bjj_custom',JSON.stringify(customSessions));}catch(e){}
+}
+
+const TYPE_DOTS={
+  'Gi class':'#378ADD','No-gi class':'#D85A30','Home drilling':'#3B6D11',
+  'Open mat':'#854F0B','Gym':'#534AB7','Extra drilling':'#3B6D11','Other':'#888780'
+};
+
+function toggleAddForm(wIdx){
+  const f=document.getElementById('add-form-'+wIdx);
+  f.classList.toggle('open');
+}
+
+function addCustomSess(wIdx){
+  const type=document.getElementById('new-type-'+wIdx).value;
+  const date=document.getElementById('new-date-'+wIdx).value;
+  const desc=document.getElementById('new-desc-'+wIdx).value.trim();
+  const id='custom_'+wIdx+'_'+Date.now();
+  const sess={id,type,dot:TYPE_DOTS[type]||'#888780',badge:'flex',flex:true,custom:true,
+              date:date||'',desc:desc||type};
+  if(!customSessions[wIdx]) customSessions[wIdx]=[];
+  customSessions[wIdx].push(sess);
+  if(desc) customDescs[id]=desc;
+  persistCustom(); persist();
+  // reset form
+  document.getElementById('new-type-'+wIdx).value='Gi class';
+  document.getElementById('new-date-'+wIdx).value='';
+  document.getElementById('new-desc-'+wIdx).value='';
+  toggleAddForm(wIdx);
+  renderCalendar(); updateStats();
+}
+
+function deleteCustomSess(id, wIdx){
+  if(!customSessions[wIdx]) return;
+  customSessions[wIdx]=customSessions[wIdx].filter(s=>s.id!==id);
+  delete sessState[id]; delete customDescs[id]; delete flexDates[id];
+  persistCustom(); persist();
+  renderCalendar(); updateStats();
+}
+
+function saveCustomType(id, val){
+  // Update in customSessions
+  Object.values(customSessions).forEach(arr=>{
+    const s=arr.find(s=>s.id===id);
+    if(s){ s.type=val; s.dot=TYPE_DOTS[val]||'#888780'; }
+  });
+  persistCustom();
 }
 
 loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
