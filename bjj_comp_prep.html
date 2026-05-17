@@ -167,7 +167,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         <div class="leg"><div class="leg-dot" style="background:#3B6D11"></div>Home drilling</div>
         <div class="leg"><div class="leg-dot" style="background:#534AB7"></div>Gym</div>
       </div>
-      <div class="info-note">Dashed sessions are flexible — pick your date. Tap <strong>Edit</strong> on any session to update the topic after class.</div>
+      <div class="info-note">Dashed sessions are flexible — pick your date. Tap <strong>Add notes</strong> after any session to log what was covered.</div>
       <div id="cal-body"></div>
     </div>
 
@@ -207,71 +207,71 @@ const WEEKS = [
     label:'Week 1 \u2014 19\u201325 May', phase:'build', pillClass:'pill-build', load:.7,
     sessions:[
       {id:'w1gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-19', fixed:'Tue 19 May',
-       desc:'Ai Yotsu grip fight + snapdown entries to double or single leg'},
+       desc:'Gi class'},
       {id:'w1home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Scissor sweep \xd750 + hip bump \xd750 from closed guard'},
       {id:'w1gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Strength \u2014 posterior chain, pull movements'},
       {id:'w1nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-05-22', fixed:'Fri 22 May',
-       desc:'Double leg + single leg entries from clinch \u2014 no-gi grips'},
+       desc:'No-gi class'},
       {id:'w1gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-05-23', fixed:'Sat 23 May',
-       desc:'Guard passing: torreando + knee cut positional rounds'},
+       desc:'Gi class'},
     ]
   },
   {
     label:'Week 2 \u2014 26 May\u20131 Jun', phase:'build', pillClass:'pill-build', load:.78,
     sessions:[
       {id:'w2open0',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-05-25', fixed:'Mon 26 May',
-       desc:'Live rounds \u2014 test guard passing and closed guard sweeps'},
+       desc:'Open mat'},
       {id:'w2gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-26', fixed:'Tue 27 May',
-       desc:'Kenka Yotsu: collar drag to back + Kouchi Gari entries'},
+       desc:'Gi class'},
       {id:'w2home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Torreando \xd730 + knee cut \xd730 passing reps'},
       {id:'w2nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-05-29', fixed:'Fri 29 May',
-       desc:'Ouchi Gari + Kouchi Gari from clinch \u2014 no-gi grip variation'},
+       desc:'No-gi class'},
       {id:'w2gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Power work \u2014 low volume, no next-day soreness'},
       {id:'w2open1',dot:'#854F0B', type:'Open mat',      badge:'',     date:'2026-06-01', fixed:'Sun 1 Jun',
-       desc:'Live rounds \u2014 Ai vs Kenka Yotsu scenarios, stay technical'},
+       desc:'Open mat'},
     ]
   },
   {
     label:'Week 3 \u2014 2\u20138 Jun', phase:'sharpen', pillClass:'pill-sharpen', load:.85,
     sessions:[
       {id:'w3gi1',  dot:'#378ADD', type:'Gi class',      badge:'3min', date:'2026-06-02', fixed:'Tue 2 Jun',
-       desc:'Comp-pace 3-min rounds \u2014 score awareness, takedown to pass sequences'},
+       desc:'Gi class'},
       {id:'w3home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Mounted armbar \xd730 + RNC finish \xd730 \u2014 tighten the details'},
       {id:'w3gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Maintenance only \u2014 short session, nothing new'},
       {id:'w3nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-06-05', fixed:'Fri 5 Jun',
-       desc:'Full game plan run-through \u2014 both Ai and Kenka Yotsu scenarios'},
+       desc:'No-gi class'},
       {id:'w3gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-06-06', fixed:'Sat 6 Jun',
-       desc:'Passing vs closed guard + half guard positional rounds'},
+       desc:'Gi class'},
       {id:'w3open1',dot:'#854F0B', type:'Open mat',      badge:'3min', date:'2026-06-08', fixed:'Sun 8 Jun',
-       desc:'Comp simulation \u2014 3-min rounds, points scored, ref decisions'},
+       desc:'Open mat'},
     ]
   },
   {
     label:'Week 4 \u2014 9\u201315 Jun', phase:'peak', pillClass:'pill-peak', load:.75,
     sessions:[
       {id:'w4gi1',  dot:'#378ADD', type:'Gi class',      badge:'3min', date:'2026-06-09', fixed:'Tue 9 Jun',
-       desc:'Full 3-min comp simulation \u2014 A-game only, ref scored'},
+       desc:'Gi class'},
       {id:'w4home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Triangle + armbar conversion \xd720 \u2014 sharpen from closed guard'},
       {id:'w4nogi1',dot:'#D85A30', type:'No-gi class',   badge:'key',  date:'2026-06-12', fixed:'Fri 12 Jun',
-       desc:'Game plan run-through at match pace \u2014 no experimenting'},
+       desc:'No-gi class'},
       {id:'w4gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Final gym session \u2014 very short, just maintain'},
       {id:'w4open1',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-06-15', fixed:'Sun 15 Jun',
-       desc:'Last hard session \u2014 trust the game plan, keep it controlled'},
+       desc:'Open mat'},
     ]
   },
   {
     label:'Week 5 \u2014 taper (16\u201320 Jun)', phase:'taper', pillClass:'pill-taper', load:.3,
     sessions:[
       {id:'w5gi1',  dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-06-16', fixed:'Tue 16 Jun',
-       desc:'Light technical flow rolling only \u2014 no hard rounds'},
+       desc:'Gi class'},
       {id:'w5home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Visualisation + light movement \u2014 15 min max, gi and no-gi'},
       {id:'w5nogi1',dot:'#D85A30', type:'No-gi class',   badge:'rest', date:'2026-06-19', fixed:'Fri 19 Jun',
@@ -486,12 +486,14 @@ function renderCalendar(){
       const chkHtml=isRest?''
         :`<div class="chk${isDone?' on':''}" onclick="toggleSess('${s.id}',this)" aria-label="Mark done">${chkSVG()}</div>`;
 
+      const hasNotes = customDescs[s.id] !== undefined && customDescs[s.id] !== null;
+      const btnLabel = hasNotes ? 'Edit notes' : 'Add notes';
       const descSection=isRest
         ?`<span class="sess-desc">${desc}</span>`
         :`<span class="sess-desc" id="desc-${s.id}">${desc}</span>
-          <div class="edit-row"><button class="edit-btn" onclick="openEditor('${s.id}')">Edit</button></div>
+          <div class="edit-row"><button class="edit-btn" id="btn-${s.id}" onclick="openEditor('${s.id}')">${btnLabel}</button></div>
           <div class="desc-editor" id="editor-${s.id}">
-            <textarea class="desc-textarea" id="ta-${s.id}" rows="2">${desc}</textarea>
+            <textarea class="desc-textarea" id="ta-${s.id}" rows="3" placeholder="What did you cover? Any notes to carry forward...">${hasNotes ? desc : ''}</textarea>
             <div class="editor-btns">
               <button class="btn-save" onclick="saveDescField('${s.id}')">Save</button>
               <button class="btn-cancel" onclick="closeEditor('${s.id}')">Cancel</button>
@@ -516,15 +518,26 @@ function renderCalendar(){
 
 function openEditor(id){
   const ta=document.getElementById('ta-'+id);
-  ta.value=document.getElementById('desc-'+id).textContent;
+  const saved=customDescs[id];
+  ta.value=(saved!==undefined&&saved!==null)?saved:'';
   document.getElementById('editor-'+id).classList.add('open');
   ta.focus();
 }
 function closeEditor(id){ document.getElementById('editor-'+id).classList.remove('open'); }
 function saveDescField(id){
   const val=document.getElementById('ta-'+id).value.trim();
-  customDescs[id]=val; persist();
-  document.getElementById('desc-'+id).textContent=val||'(no description)';
+  const btn=document.getElementById('btn-'+id);
+  if(val){
+    customDescs[id]=val;
+    document.getElementById('desc-'+id).textContent=val;
+    if(btn) btn.textContent='Edit notes';
+  } else {
+    delete customDescs[id];
+    const s=WEEKS.flatMap(w=>w.sessions).find(s=>s.id===id);
+    document.getElementById('desc-'+id).textContent=s?s.desc:'';
+    if(btn) btn.textContent='Add notes';
+  }
+  persist();
   closeEditor(id);
 }
 function saveDate(id,val){ flexDates[id]=val; persist(); }
