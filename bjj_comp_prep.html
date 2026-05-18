@@ -176,9 +176,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     </div>
     <div class="comp-date">20 June 2026 &middot; NAGA Kids Intermediate &middot; 3-min matches</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-      <span id="auth-info" style="font-size:10px;color:var(--text3);">Checking sign-in...</span>
+      <span id="auth-info" style="font-size:10px;color:var(--text3);" onclick="toggleDebug()">Checking sign-in...</span>
       <button id="auth-btn" style="font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;">Sign in with Google</button>
     </div>
+    <div id="fb-debug" style="display:none;font-size:10px;font-family:monospace;background:#0a0a0a;border:0.5px solid #333;border-radius:6px;padding:8px;margin-top:6px;max-height:120px;overflow-y:auto;"></div>
   </div>
 
   <div class="stats-row">
@@ -1099,12 +1100,31 @@ window.closeSyncModal   = closeSyncModal;
 window.exportData       = exportData;
 window.importData       = importData;
 window.googleSignIn     = googleSignIn;
+window.toggleDebug = function(){
+  const p = document.getElementById('fb-debug');
+  if(p) p.style.display = p.style.display==='none' ? 'block' : 'none';
+};
 
 loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
 </script>
 
 <!-- Firebase — loaded as module, wires into app after load ──────────────-->
 <script type="module">
+// ── Debug logger — writes to on-screen panel ─────────────────────────────
+function fbLog(msg, isError){
+  console.log('[Firebase]', msg);
+  const panel = document.getElementById('fb-debug');
+  if(panel){
+    const line = document.createElement('div');
+    line.style.color = isError ? '#F0997B' : '#97C459';
+    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+  }
+}
+
+fbLog('Module script starting...');
+
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAuth, signInWithPopup, signInWithRedirect,
@@ -1113,6 +1133,8 @@ import { getAuth, signInWithPopup, signInWithRedirect,
   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+fbLog('Firebase SDKs imported OK');
 
 const firebaseConfig = {
   apiKey: "AIzaSyAI2obcCQvO7Apz93hY0mHvZr0CqcRJ38s",
@@ -1125,6 +1147,8 @@ const firebaseConfig = {
 
 try {
   const fbApp = initializeApp(firebaseConfig);
+  fbLog('Firebase app initialised');
+
   const auth  = getAuth(fbApp);
   const db    = getFirestore(fbApp);
   let currentUid = null;
@@ -1132,20 +1156,33 @@ try {
 
   function userDocRef(uid){ return doc(db,'bjjCompPrep',uid); }
 
-  // Wire saveToFirestore into the app
+  // Handle redirect result on load
+  getRedirectResult(auth).then(result=>{
+    if(result && result.user){
+      fbLog('Redirect sign-in succeeded: ' + result.user.email);
+    } else {
+      fbLog('No redirect result (normal on first load)');
+    }
+  }).catch(e=>{
+    fbLog('Redirect result error: ' + e.code + ' ' + e.message, true);
+  });
+
+  // Wire saveToFirestore
   window.saveToFirestore = async function(){
-    if(!currentUid) return;
+    if(!currentUid){ fbLog('saveToFirestore skipped — not signed in'); return; }
     try{
       await setDoc(userDocRef(currentUid), {
         sessState, gpState, flexDates, clState, customDescs,
         gpEdits, matchEdits, clEdits, clDeleted, customSessions,
         updatedAt: serverTimestamp()
       },{ merge:true });
-    } catch(e){ console.warn('Firestore save failed',e); }
+      fbLog('Saved to Firestore OK');
+    } catch(e){ fbLog('Firestore save failed: ' + e.code + ' ' + e.message, true); }
   };
 
   function applyRemoteData(data){
     if(!data) return;
+    fbLog('Applying remote data from Firestore');
     sessState      = data.sessState      || {};
     gpState        = data.gpState        || {};
     flexDates      = data.flexDates      || {};
@@ -1165,33 +1202,33 @@ try {
 
   function subscribeFirestore(uid){
     if(unsub) unsub();
+    fbLog('Subscribing to Firestore for uid: ' + uid.substring(0,8) + '...');
     unsub = onSnapshot(userDocRef(uid), snap=>{
-      if(snap.exists()) applyRemoteData(snap.data());
-    }, err=>console.warn('Firestore error',err));
+      if(snap.exists()){ fbLog('Firestore snapshot received'); applyRemoteData(snap.data()); }
+      else { fbLog('Firestore doc empty — first use'); }
+    }, err=>{ fbLog('Firestore listener error: ' + err.code, true); });
   }
 
-  // Detect iOS PWA (home screen) — must use redirect, not popup
+  // Detect iOS PWA
   const isIosPwa = window.navigator.standalone === true;
+  fbLog('iOS PWA mode: ' + isIosPwa);
   const provider = new GoogleAuthProvider();
 
-  // Handle redirect result on page load (fires after redirect sign-in returns)
-  getRedirectResult(auth).then(result=>{
-    if(result && result.user) console.log('Redirect sign-in succeeded');
-  }).catch(e=>console.warn('Redirect result error',e));
-
-  // Wire googleSignIn into the app
   window.googleSignIn = async function(){
+    fbLog('Sign-in attempt — isIosPwa: ' + isIosPwa);
     try{
       if(isIosPwa){
-        // Redirect method — page reloads after sign-in then getRedirectResult fires
+        fbLog('Using redirect sign-in...');
         await signInWithRedirect(auth, provider);
       } else {
-        await signInWithPopup(auth, provider);
+        fbLog('Using popup sign-in...');
+        const result = await signInWithPopup(auth, provider);
+        fbLog('Popup sign-in succeeded: ' + result.user.email);
       }
     } catch(e){
-      console.warn('Sign-in failed',e);
+      fbLog('Sign-in error: ' + e.code + ' — ' + e.message, true);
       const info = document.getElementById('auth-info');
-      if(info) info.textContent = 'Sign-in failed — check authorised domains in Firebase';
+      if(info) info.textContent = 'Error: ' + e.code;
     }
   };
 
@@ -1199,11 +1236,13 @@ try {
     const btn  = document.getElementById('auth-btn');
     const info = document.getElementById('auth-info');
     if(user){
+      fbLog('Auth state: signed in as ' + (user.email||'anonymous'));
       currentUid = user.uid;
       if(btn){ btn.textContent='Sign out'; btn.onclick=()=>signOut(auth); }
       if(info) info.textContent = user.displayName||user.email||'Signed in';
       subscribeFirestore(user.uid);
     } else {
+      fbLog('Auth state: signed out');
       currentUid = null;
       if(unsub){ unsub(); unsub=null; }
       if(btn){ btn.textContent='Sign in with Google'; btn.onclick=window.googleSignIn; }
@@ -1211,8 +1250,10 @@ try {
     }
   });
 
+  fbLog('Firebase setup complete');
+
 } catch(e){
-  console.warn('Firebase failed to initialise:',e);
+  fbLog('Firebase init failed: ' + e.message, true);
   const info = document.getElementById('auth-info');
   if(info) info.textContent='Firebase unavailable — using local storage';
 }
