@@ -1107,7 +1107,8 @@ loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); r
 <script type="module">
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getAuth, signInWithPopup, signInAnonymously,
+import { getAuth, signInWithPopup, signInWithRedirect,
+         getRedirectResult, signInAnonymously,
          GoogleAuthProvider, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp }
@@ -1169,13 +1170,28 @@ try {
     }, err=>console.warn('Firestore error',err));
   }
 
+  // Detect iOS PWA (home screen) — must use redirect, not popup
+  const isIosPwa = window.navigator.standalone === true;
+  const provider = new GoogleAuthProvider();
+
+  // Handle redirect result on page load (fires after redirect sign-in returns)
+  getRedirectResult(auth).then(result=>{
+    if(result && result.user) console.log('Redirect sign-in succeeded');
+  }).catch(e=>console.warn('Redirect result error',e));
+
   // Wire googleSignIn into the app
   window.googleSignIn = async function(){
     try{
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      if(isIosPwa){
+        // Redirect method — page reloads after sign-in then getRedirectResult fires
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch(e){
-      console.warn('Popup sign-in failed',e);
-      try{ await signInAnonymously(auth); }catch(e2){}
+      console.warn('Sign-in failed',e);
+      const info = document.getElementById('auth-info');
+      if(info) info.textContent = 'Sign-in failed — check authorised domains in Firebase';
     }
   };
 
