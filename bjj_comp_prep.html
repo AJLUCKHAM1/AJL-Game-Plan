@@ -1209,16 +1209,19 @@ try {
     }, err=>{ fbLog('Firestore listener error: ' + err.code, true); });
   }
 
-  // Detect iOS PWA
+  // Detect iOS (any iOS Safari — popup is unreliable on all iOS, not just PWA)
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isIosPwa = window.navigator.standalone === true;
-  fbLog('iOS PWA mode: ' + isIosPwa);
+  fbLog('iOS: ' + isIos + ' PWA: ' + isIosPwa);
   const provider = new GoogleAuthProvider();
 
   window.googleSignIn = async function(){
-    fbLog('Sign-in attempt — isIosPwa: ' + isIosPwa);
+    fbLog('Sign-in attempt — iOS: ' + isIos);
     try{
-      if(isIosPwa){
-        fbLog('Using redirect sign-in...');
+      if(isIos){
+        // Use redirect on all iOS — popup is blocked by Safari
+        fbLog('Using redirect sign-in (iOS)...');
         await signInWithRedirect(auth, provider);
       } else {
         fbLog('Using popup sign-in...');
