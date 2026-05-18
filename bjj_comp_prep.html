@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BJJ Comp Prep">
 <meta name="theme-color" content="#0f0f0f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>BJJ Comp Prep — 20 June 2026</title>
 <style>
 :root {
@@ -119,6 +120,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .section-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
+.item-edit-wrap{display:flex;align-items:flex-start;gap:6px;width:100%;}
+.item-edit-wrap textarea{flex:1;font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 8px;line-height:1.4;resize:none;font-family:inherit;min-height:36px;}
+.item-edit-wrap textarea:focus{outline:none;border-color:var(--blue);}
+.item-edit-wrap .edit-icon-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px;flex-shrink:0;font-size:14px;line-height:1;}
+.item-edit-wrap .edit-icon-btn:active{color:var(--text);}
+.gp-item-editing .gp-dot{display:none;}
+.inline-save{font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;}
+.inline-cancel{font-size:11px;padding:3px 8px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;}
+.edit-item-btns{display:flex;gap:6px;margin-top:4px;}
+.section-edit-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.gp-title-input{font-size:13px;font-weight:600;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:4px;padding:2px 6px;font-family:inherit;flex:1;margin-right:8px;}
+.gp-title-input:focus{outline:none;border-color:var(--blue);}
+.match-title-input{font-size:13px;font-weight:600;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:4px;padding:3px 8px;font-family:inherit;width:100%;margin-bottom:8px;}
+.match-title-input:focus{outline:none;border-color:var(--blue);}
+.add-item-btn{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);background:transparent;border:0.5px dashed var(--border2);border-radius:var(--radius-sm);padding:5px 10px;cursor:pointer;font-family:inherit;margin-top:6px;width:100%;}
+.add-item-btn:active{background:var(--bg3);}
+.cl-item-text{flex:1;}
+.cl-edit-wrap{display:flex;flex-direction:column;gap:5px;flex:1;}
+.cl-edit-input{font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 8px;font-family:inherit;width:100%;}
+.cl-edit-input:focus{outline:none;border-color:var(--blue);}
 .add-sess-btn{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text3);background:transparent;border:0.5px dashed var(--border2);border-radius:var(--radius);padding:9px 14px;cursor:pointer;width:100%;font-family:inherit;margin-top:4px;}
 .add-sess-btn:active{background:var(--bg2);}
 .add-sess-form{background:var(--bg2);border:0.5px solid var(--blue);border-radius:var(--radius);padding:12px 14px;margin-top:4px;display:none;flex-direction:column;gap:10px;}
@@ -409,13 +430,17 @@ const COMP_CHECKLIST = [
   'Coach or training partner contact confirmed',
 ];
 
-let sessState={}, gpState={}, flexDates={}, clState={}, customDescs={};
+let sessState={}, gpState={}, flexDates={}, clState={}, customDescs={}, gpEdits={}, matchEdits={}, clEdits={}, clDeleted={};
 function loadState(){
   try{sessState=JSON.parse(localStorage.getItem('bjj_sess')||'{}');}catch(e){}
   try{gpState=JSON.parse(localStorage.getItem('bjj_gp')||'{}');}catch(e){}
   try{flexDates=JSON.parse(localStorage.getItem('bjj_dates')||'{}');}catch(e){}
   try{clState=JSON.parse(localStorage.getItem('bjj_cl')||'{}');}catch(e){}
   try{customDescs=JSON.parse(localStorage.getItem('bjj_descs')||'{}');}catch(e){}
+  try{gpEdits=JSON.parse(localStorage.getItem('bjj_gpedits')||'{}');}catch(e){}
+  try{matchEdits=JSON.parse(localStorage.getItem('bjj_matchedits')||'{}');}catch(e){}
+  try{clEdits=JSON.parse(localStorage.getItem('bjj_pledits')||'{}');}catch(e){}
+  try{clDeleted=JSON.parse(localStorage.getItem('bjj_pldeleted')||'{}');}catch(e){}
 }
 function persist(){
   try{localStorage.setItem('bjj_sess',JSON.stringify(sessState));}catch(e){}
@@ -423,6 +448,10 @@ function persist(){
   try{localStorage.setItem('bjj_dates',JSON.stringify(flexDates));}catch(e){}
   try{localStorage.setItem('bjj_cl',JSON.stringify(clState));}catch(e){}
   try{localStorage.setItem('bjj_descs',JSON.stringify(customDescs));}catch(e){}
+  try{localStorage.setItem('bjj_gpedits',JSON.stringify(gpEdits));}catch(e){}
+  try{localStorage.setItem('bjj_matchedits',JSON.stringify(matchEdits));}catch(e){}
+  try{localStorage.setItem('bjj_pledits',JSON.stringify(clEdits));}catch(e){}
+  try{localStorage.setItem('bjj_pldeleted',JSON.stringify(clDeleted));}catch(e){}
 }
 function getDesc(id,fb){ return (customDescs[id]!==undefined&&customDescs[id]!==null)?customDescs[id]:fb; }
 
@@ -602,6 +631,12 @@ function toggleSess(id,el){
   updateStats();
 }
 
+function gpItemText(gid,idx,defaultText){
+  return (gpEdits[gid] && gpEdits[gid][idx]!==undefined) ? gpEdits[gid][idx] : defaultText;
+}
+function gpCardTitle(gid,defaultTitle){
+  return (gpEdits[gid+'_title']!==undefined) ? gpEdits[gid+'_title'] : defaultTitle;
+}
 function renderGamePlan(){
   const body=document.getElementById('gp-body');
   body.innerHTML='';
@@ -609,18 +644,31 @@ function renderGamePlan(){
     body.innerHTML+=`<div class="gp-section-hdr">${sec.section}</div>`;
     let html='<div class="gp-grid">';
     sec.cards.forEach(g=>{
-      const dc=g.items.filter((_,i)=>gpState[g.id+'_'+i]).length;
-      const allDone=dc===g.items.length;
+      const allItems=[...(g.items.map((t,i)=>gpItemText(g.id,i,t))),...(gpEdits[g.id+'_extra']||[])];
+      const dc=allItems.filter((_,i)=>gpState[g.id+'_'+i]).length;
+      const allDone=dc===allItems.length && allItems.length>0;
       const sl=allDone?'ready':g.status;
       const sc=sl==='ready'?'s-ready':sl==='sharp'?'s-sharp':'s-refine';
-      const prog=Math.round(dc/g.items.length*100);
+      const prog=allItems.length?Math.round(dc/allItems.length*100):0;
+      const titleText=gpCardTitle(g.id,g.cat);
       html+=`<div class="gp-card">
-        <div class="gp-head"><span class="gp-title">${g.cat}</span><span class="gp-status ${sc}">${sl}</span></div>
-        ${g.items.map((item,i)=>{
+        <div class="gp-head">
+          <input class="gp-title-input" value="${titleText.replace(/"/g,'&quot;')}" onchange="saveGpTitle('${g.id}',this.value)" onblur="saveGpTitle('${g.id}',this.value)">
+          <span class="gp-status ${sc}">${sl}</span>
+        </div>
+        ${allItems.map((item,i)=>{
           const d=!!gpState[g.id+'_'+i];
-          return `<div class="gp-item${d?' done-item':''}" onclick="toggleGp('${g.id}',${i},this)">
-            <div class="gp-dot" style="background:${g.color}"></div><span>${item}</span></div>`;
+          const isExtra=i>=g.items.length;
+          return `<div class="gp-item${d?' done-item':''}" id="gpitem-${g.id}-${i}">
+            <div class="gp-dot" style="background:${g.color}"></div>
+            <span class="gp-item-text" onclick="toggleGp('${g.id}',${i},this.closest('.gp-item'))">${item}</span>
+            <button class="edit-icon-btn" onclick="editGpItem('${g.id}',${i},'${isExtra?'extra':'base'}')" title="Edit">&#9998;</button>
+          </div>`;
         }).join('')}
+        <button class="add-item-btn" onclick="addGpItem('${g.id}')">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Add item
+        </button>
         <div class="prog-bg"><div class="prog-fill" style="width:${prog}%"></div></div>
       </div>`;
     });
@@ -629,27 +677,203 @@ function renderGamePlan(){
   });
 }
 
+function saveGpTitle(gid,val){ gpEdits[gid+'_title']=val.trim(); persist(); }
+
+function editGpItem(gid,idx,kind){
+  const el=document.getElementById('gpitem-'+gid+'-'+idx);
+  const current=el.querySelector('.gp-item-text').textContent;
+  el.classList.add('gp-item-editing');
+  el.innerHTML=`
+    <textarea rows="2" id="gpitem-ta-${gid}-${idx}">${current}</textarea>
+    <div class="edit-item-btns">
+      <button class="inline-save" onclick="saveGpItem('${gid}',${idx},'${kind}')">Save</button>
+      <button class="inline-cancel" onclick="renderGamePlan()">Cancel</button>
+      <button class="inline-cancel" onclick="deleteGpItem('${gid}',${idx},'${kind}')" style="color:var(--coral-text);border-color:rgba(216,90,48,.3)">Remove</button>
+    </div>`;
+  const ta=document.getElementById('gpitem-ta-'+gid+'-'+idx);
+  ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+}
+
+function saveGpItem(gid,idx,kind){
+  const ta=document.getElementById('gpitem-ta-'+gid+'-'+idx);
+  const val=ta.value.trim(); if(!val) return;
+  if(kind==='extra'){
+    if(!gpEdits[gid+'_extra']) gpEdits[gid+'_extra']=[];
+    // find which extra index this is
+    const baseLen=GAME_PLAN.flatMap(s=>s.cards).find(c=>c.id===gid)?.items.length||0;
+    gpEdits[gid+'_extra'][idx-baseLen]=val;
+  } else {
+    if(!gpEdits[gid]) gpEdits[gid]={};
+    gpEdits[gid][idx]=val;
+  }
+  persist(); renderGamePlan();
+}
+
+function deleteGpItem(gid,idx,kind){
+  if(kind==='extra'){
+    const baseLen=GAME_PLAN.flatMap(s=>s.cards).find(c=>c.id===gid)?.items.length||0;
+    if(gpEdits[gid+'_extra']) gpEdits[gid+'_extra'].splice(idx-baseLen,1);
+    // clean up gpState for this and shift above
+    delete gpState[gid+'_'+idx];
+  } else {
+    if(!gpEdits[gid]) gpEdits[gid]={};
+    gpEdits[gid][idx]='__deleted__';
+    delete gpState[gid+'_'+idx];
+  }
+  persist(); renderGamePlan();
+}
+
+function addGpItem(gid){
+  const baseLen=GAME_PLAN.flatMap(s=>s.cards).find(c=>c.id===gid)?.items.length||0;
+  const extras=gpEdits[gid+'_extra']||[];
+  if(!gpEdits[gid+'_extra']) gpEdits[gid+'_extra']=[];
+  gpEdits[gid+'_extra'].push('New item — tap pencil to edit');
+  persist(); renderGamePlan();
+  // immediately open editor for new item
+  const newIdx=baseLen+gpEdits[gid+'_extra'].length-1;
+  setTimeout(()=>editGpItem(gid,newIdx,'extra'),50);
+}
+
 function toggleGp(gid,idx,el){
   const key=gid+'_'+idx; gpState[key]=!gpState[key]; persist();
   el.classList.toggle('done-item',gpState[key]);
   updateStats(); renderGamePlan();
 }
 
-function renderMatch(){
-  document.getElementById('match-body').innerHTML=MATCH_STRATEGY.map(m=>`
-    <div class="match-card">
-      <div class="match-title">${m.title}</div>
-      ${m.items.map((it,i)=>`<div class="match-item"><span class="mi-num">${i+1}.</span><span>${it}</span></div>`).join('')}
-    </div>`).join('');
-}
+function matchItemText(mi,ii,def){ return (matchEdits[mi+'_'+ii]!==undefined)?matchEdits[mi+'_'+ii]:def; }
+function matchTitleText(mi,def){ return (matchEdits[mi+'_title']!==undefined)?matchEdits[mi+'_title']:def; }
 
-function renderComp(){
-  document.getElementById('comp-body').innerHTML=COMP_CHECKLIST.map((item,i)=>{
-    const d=!!clState['cl_'+i];
-    return `<div class="cl-item${d?' done-cl':''}" onclick="toggleCl(${i},this)">
-      <div class="chk${d?' on':''}">${chkSVG()}</div><span>${item}</span></div>`;
+function renderMatch(){
+  const body=document.getElementById('match-body');
+  body.innerHTML=MATCH_STRATEGY.map((m,mi)=>{
+    const extraItems=matchEdits[mi+'_extra']||[];
+    const allItems=[...m.items.map((t,ii)=>matchItemText(mi,ii,t)),...extraItems];
+    const titleText=matchTitleText(mi,m.title);
+    return `<div class="match-card">
+      <input class="match-title-input" value="${titleText.replace(/"/g,'&quot;')}" onchange="saveMatchTitle(${mi},this.value)">
+      ${allItems.map((it,ii)=>`
+        <div class="match-item" id="matchitem-${mi}-${ii}">
+          <span class="mi-num">${ii+1}.</span>
+          <span class="match-item-text">${it}</span>
+          <button class="edit-icon-btn" onclick="editMatchItem(${mi},${ii})" title="Edit" style="margin-left:auto;flex-shrink:0;">&#9998;</button>
+        </div>`).join('')}
+      <button class="add-item-btn" onclick="addMatchItem(${mi})">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add point
+      </button>
+    </div>`;
   }).join('');
 }
+
+function saveMatchTitle(mi,val){ matchEdits[mi+'_title']=val.trim(); persist(); }
+
+function editMatchItem(mi,ii){
+  const el=document.getElementById('matchitem-'+mi+'-'+ii);
+  const current=el.querySelector('.match-item-text').textContent;
+  el.innerHTML=`<span class="mi-num">${ii+1}.</span>
+    <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+      <textarea rows="2" id="matchta-${mi}-${ii}" style="font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 8px;font-family:inherit;width:100%;resize:none;">${current}</textarea>
+      <div class="edit-item-btns">
+        <button class="inline-save" onclick="saveMatchItem(${mi},${ii})">Save</button>
+        <button class="inline-cancel" onclick="renderMatch()">Cancel</button>
+        <button class="inline-cancel" onclick="deleteMatchItem(${mi},${ii})" style="color:var(--coral-text);border-color:rgba(216,90,48,.3)">Remove</button>
+      </div>
+    </div>`;
+  const ta=document.getElementById('matchta-'+mi+'-'+ii);
+  ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+}
+
+function saveMatchItem(mi,ii){
+  const ta=document.getElementById('matchta-'+mi+'-'+ii);
+  const val=ta.value.trim(); if(!val) return;
+  const baseLen=MATCH_STRATEGY[mi].items.length;
+  if(ii<baseLen){ matchEdits[mi+'_'+ii]=val; }
+  else { if(!matchEdits[mi+'_extra']) matchEdits[mi+'_extra']=[]; matchEdits[mi+'_extra'][ii-baseLen]=val; }
+  persist(); renderMatch();
+}
+
+function deleteMatchItem(mi,ii){
+  const baseLen=MATCH_STRATEGY[mi].items.length;
+  if(ii<baseLen){ matchEdits[mi+'_'+ii]='__deleted__'; }
+  else { if(matchEdits[mi+'_extra']) matchEdits[mi+'_extra'].splice(ii-baseLen,1); }
+  persist(); renderMatch();
+}
+
+function addMatchItem(mi){
+  if(!matchEdits[mi+'_extra']) matchEdits[mi+'_extra']=[];
+  matchEdits[mi+'_extra'].push('New point — tap pencil to edit');
+  persist(); renderMatch();
+  const newIdx=MATCH_STRATEGY[mi].items.length+matchEdits[mi+'_extra'].length-1;
+  setTimeout(()=>editMatchItem(mi,newIdx),50);
+}
+
+function clItemText(i,def){ return (clEdits[i]!==undefined)?clEdits[i]:def; }
+
+function renderComp(){
+  const extraItems=clEdits['extra']||[];
+  const allItems=[
+    ...COMP_CHECKLIST.map((t,i)=>({text:clItemText(i,t),idx:i,isExtra:false})).filter(x=>!clDeleted[x.idx]),
+    ...extraItems.map((t,i)=>({text:t,idx:'e'+i,isExtra:true,eIdx:i}))
+  ];
+  document.getElementById('comp-body').innerHTML=allItems.map(({text,idx,isExtra,eIdx})=>{
+    const d=!!clState['cl_'+idx];
+    return `<div class="cl-item${d?' done-cl':''}" id="clitem-${idx}">
+      <div class="chk${d?' on':''}" onclick="toggleClById('${idx}',this)" aria-label="Check off">${chkSVG()}</div>
+      <span class="cl-item-text" onclick="toggleClById('${idx}',document.querySelector('#clitem-${idx} .chk'))">${text}</span>
+      <button class="edit-icon-btn" onclick="editClItem('${idx}',${isExtra},${isExtra?eIdx:-1})" title="Edit" style="flex-shrink:0;margin-left:4px;">&#9998;</button>
+    </div>`;
+  }).join('');
+  document.getElementById('comp-body').innerHTML+=`
+    <button class="add-item-btn" onclick="addClItem()" style="margin-top:8px;">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Add item
+    </button>`;
+}
+
+function toggleClById(idx,chkEl){
+  const key='cl_'+idx; clState[key]=!clState[key]; persist();
+  const el=document.getElementById('clitem-'+idx);
+  el.classList.toggle('done-cl',clState[key]);
+  chkEl.classList.toggle('on',clState[key]);
+}
+
+function editClItem(idx,isExtra,eIdx){
+  const el=document.getElementById('clitem-'+idx);
+  const current=el.querySelector('.cl-item-text').textContent;
+  el.innerHTML=`
+    <div class="cl-edit-wrap">
+      <input class="cl-edit-input" id="clin-${idx}" value="${current.replace(/"/g,'&quot;')}">
+      <div class="edit-item-btns">
+        <button class="inline-save" onclick="saveClItem('${idx}',${isExtra},${eIdx})">Save</button>
+        <button class="inline-cancel" onclick="renderComp()">Cancel</button>
+        <button class="inline-cancel" onclick="deleteClItem('${idx}',${isExtra},${eIdx})" style="color:var(--coral-text);border-color:rgba(216,90,48,.3)">Remove</button>
+      </div>
+    </div>`;
+  const inp=document.getElementById('clin-'+idx);
+  inp.focus(); inp.select();
+}
+
+function saveClItem(idx,isExtra,eIdx){
+  const inp=document.getElementById('clin-'+idx);
+  const val=inp.value.trim(); if(!val) return;
+  if(isExtra){ if(!clEdits['extra']) clEdits['extra']=[]; clEdits['extra'][eIdx]=val; }
+  else { clEdits[parseInt(idx)]=val; }
+  persist(); renderComp();
+}
+
+function deleteClItem(idx,isExtra,eIdx){
+  if(isExtra){ if(clEdits['extra']) clEdits['extra'].splice(eIdx,1); }
+  else { clDeleted[parseInt(idx)]=true; delete clState['cl_'+idx]; }
+  persist(); renderComp();
+}
+
+function addClItem(){
+  if(!clEdits['extra']) clEdits['extra']=[];
+  clEdits['extra'].push('New item — tap pencil to edit');
+  persist(); renderComp();
+  setTimeout(()=>editClItem('e'+(clEdits['extra'].length-1),true,clEdits['extra'].length-1),50);
+}
+
 function toggleCl(i,el){
   const key='cl_'+i; clState[key]=!clState[key]; persist();
   el.classList.toggle('done-cl',clState[key]);
