@@ -120,6 +120,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .section-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
+.sync-btn{position:fixed;bottom:calc(16px + var(--safe-bottom));right:18px;width:44px;height:44px;border-radius:50%;background:#1a1a1a;border:1px solid var(--border2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.5);}
+.sync-btn:active{background:var(--bg3);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#1a1a1a;border:0.5px solid var(--border2);border-radius:var(--radius);padding:20px;width:calc(100% - 40px);max-width:400px;max-height:80vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5;}
+.modal-textarea{width:100%;font-size:11px;font-family:monospace;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px;height:120px;resize:none;}
+.modal-textarea:focus{outline:none;border-color:var(--blue);}
+.modal-btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.modal-note{font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5;}
 .item-edit-wrap{display:flex;align-items:flex-start;gap:6px;width:100%;}
 .item-edit-wrap textarea{flex:1;font-size:13px;color:var(--text);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 8px;line-height:1.4;resize:none;font-family:inherit;min-height:36px;}
 .item-edit-wrap textarea:focus{outline:none;border-color:var(--blue);}
@@ -164,6 +175,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <span class="days-badge" id="days-badge">—</span>
     </div>
     <div class="comp-date">20 June 2026 &middot; NAGA Kids Intermediate &middot; 3-min matches</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+      <span id="auth-info" style="font-size:10px;color:var(--text3);">Checking sign-in...</span>
+      <button id="auth-btn" style="font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;">Sign in with Google</button>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -227,7 +242,128 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   </div>
 </div>
 
-<script>
+<!-- Sync floating button -->
+<button class="sync-btn" onclick="openSyncModal()" title="Export / Import data">⇅</button>
+
+<!-- Sync modal -->
+<div class="modal-overlay" id="sync-modal">
+  <div class="modal">
+    <div class="modal-title">Sync across devices</div>
+    <div class="modal-sub">When signed in with Google, all data syncs automatically across devices via Firebase. Use the export/import below as a manual fallback if needed.</div>
+    <textarea class="modal-textarea" id="sync-ta" placeholder="Paste exported JSON here to import..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-save" onclick="exportData()">Export — copy to clipboard</button>
+      <button class="btn-save" style="background:var(--green);" onclick="importData()">Import — load from above</button>
+      <button class="btn-cancel" onclick="closeSyncModal()">Close</button>
+    </div>
+    <div class="modal-note" id="sync-msg"></div>
+  </div>
+</div>
+
+<script type="module">
+// ── Firebase SDK ──────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAI2obcCQvO7Apz93hY0mHvZr0CqcRJ38s",
+  authDomain: "bjj-apps.firebaseapp.com",
+  projectId: "bjj-apps",
+  storageBucket: "bjj-apps.firebasestorage.app",
+  messagingSenderId: "524700200059",
+  appId: "1:524700200059:web:c738320561b0680138c6de"
+};
+const fbApp  = initializeApp(firebaseConfig);
+const auth   = getAuth(fbApp);
+const db     = getFirestore(fbApp);
+let currentUid = null;
+let firestoreUnsub = null; // live listener unsubscribe handle
+
+// ── Firestore helpers ─────────────────────────────────────────────────────
+function userDocRef(uid){ return doc(db, 'bjjCompPrep', uid); }
+
+async function saveToFirestore(){
+  if(!currentUid) return;
+  try{
+    await setDoc(userDocRef(currentUid), {
+      sessState, gpState, flexDates, clState, customDescs,
+      gpEdits, matchEdits, clEdits, clDeleted, customSessions,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch(e){ console.warn('Firestore save failed', e); }
+}
+
+function applyRemoteData(data){
+  if(!data) return;
+  sessState      = data.sessState      || {};
+  gpState        = data.gpState        || {};
+  flexDates      = data.flexDates      || {};
+  clState        = data.clState        || {};
+  customDescs    = data.customDescs    || {};
+  gpEdits        = data.gpEdits        || {};
+  matchEdits     = data.matchEdits     || {};
+  clEdits        = data.clEdits        || {};
+  clDeleted      = data.clDeleted      || {};
+  customSessions = data.customSessions || {};
+  // Fix numeric keys for customSessions
+  const fixed={};
+  Object.keys(customSessions).forEach(k=>{ fixed[parseInt(k)||k]=customSessions[k]; });
+  customSessions=fixed;
+  persist();
+  updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
+}
+
+function subscribeFirestore(uid){
+  if(firestoreUnsub) firestoreUnsub();
+  firestoreUnsub = onSnapshot(userDocRef(uid), snap=>{
+    if(snap.exists()){
+      applyRemoteData(snap.data());
+    }
+  }, err=>{ console.warn('Firestore listener error', err); });
+}
+
+// ── Auth state ────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, user=>{
+  if(user){
+    currentUid = user.uid;
+    updateAuthUI(user);
+    subscribeFirestore(user.uid);
+  } else {
+    currentUid = null;
+    if(firestoreUnsub){ firestoreUnsub(); firestoreUnsub=null; }
+    updateAuthUI(null);
+  }
+});
+
+function updateAuthUI(user){
+  const btn = document.getElementById('auth-btn');
+  const info = document.getElementById('auth-info');
+  if(!btn) return;
+  if(user){
+    btn.textContent = 'Sign out';
+    btn.onclick = ()=>signOut(auth);
+    info.textContent = user.displayName || user.email || 'Signed in (anonymous)';
+  } else {
+    btn.textContent = 'Sign in with Google';
+    btn.onclick = googleSignIn;
+    info.textContent = 'Not signed in — data saved locally only';
+  }
+}
+
+async function googleSignIn(){
+  try{
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e){
+    console.warn('Sign in failed', e);
+    // Fallback to anonymous if popup blocked (e.g. iOS PWA)
+    try{ await signInAnonymously(auth); } catch(e2){}
+  }
+}
+
 const COMP = new Date('2026-06-20');
 
 /* ── CALENDAR DATA
@@ -250,14 +386,16 @@ const WEEKS = [
        desc:'No-gi class'},
       {id:'w1gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-05-23', fixed:'Sat 23 May',
        desc:'Gi class'},
+      {id:'w1open1',dot:'#854F0B', type:'Open mat',      badge:'',     date:'2026-05-24', fixed:'Sun 24 May',
+       desc:'Open mat'},
     ]
   },
   {
     label:'Week 2 \u2014 26 May\u20131 Jun', phase:'build', pillClass:'pill-build', load:.78,
     sessions:[
-      {id:'w2open0',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-05-25', fixed:'Mon 26 May',
+      {id:'w2open0',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-05-25', fixed:'Mon 25 May',
        desc:'Open mat'},
-      {id:'w2gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-26', fixed:'Tue 27 May',
+      {id:'w2gi1',  dot:'#378ADD', type:'Gi class',      badge:'key',  date:'2026-05-26', fixed:'Tue 26 May',
        desc:'Gi class'},
       {id:'w2home1',dot:'#3B6D11', type:'Home drilling', badge:'flex', flex:true,
        desc:'Torreando \xd730 + knee cut \xd730 passing reps'},
@@ -265,7 +403,7 @@ const WEEKS = [
        desc:'No-gi class'},
       {id:'w2gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Power work \u2014 low volume, no next-day soreness'},
-      {id:'w2open1',dot:'#854F0B', type:'Open mat',      badge:'',     date:'2026-06-01', fixed:'Sun 1 Jun',
+      {id:'w2open1',dot:'#854F0B', type:'Open mat',      badge:'',     date:'2026-05-31', fixed:'Sun 31 May',
        desc:'Open mat'},
     ]
   },
@@ -282,7 +420,7 @@ const WEEKS = [
        desc:'No-gi class'},
       {id:'w3gisat',dot:'#378ADD', type:'Gi class',      badge:'',     date:'2026-06-06', fixed:'Sat 6 Jun',
        desc:'Gi class'},
-      {id:'w3open1',dot:'#854F0B', type:'Open mat',      badge:'3min', date:'2026-06-08', fixed:'Sun 8 Jun',
+      {id:'w3open1',dot:'#854F0B', type:'Open mat',      badge:'3min', date:'2026-06-07', fixed:'Sun 7 Jun',
        desc:'Open mat'},
     ]
   },
@@ -297,7 +435,7 @@ const WEEKS = [
        desc:'No-gi class'},
       {id:'w4gym1',  dot:'#534AB7', type:'Gym',           badge:'flex', flex:true,
        desc:'Final gym session \u2014 very short, just maintain'},
-      {id:'w4open1',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-06-15', fixed:'Sun 15 Jun',
+      {id:'w4open1',dot:'#854F0B', type:'Open mat',      badge:'key',  date:'2026-06-14', fixed:'Sun 14 Jun',
        desc:'Open mat'},
     ]
   },
@@ -310,7 +448,7 @@ const WEEKS = [
        desc:'Visualisation + light movement \u2014 15 min max, gi and no-gi'},
       {id:'w5nogi1',dot:'#D85A30', type:'No-gi class',   badge:'rest', date:'2026-06-19', fixed:'Fri 19 Jun',
        desc:'Day before comp \u2014 skip or light movement only. Rest.'},
-      {id:'w5rest1', dot:'#555',   type:'Rest',           badge:'rest', date:'2026-06-19', fixed:'Sat 19 Jun',
+      {id:'w5rest1', dot:'#555',   type:'Rest',           badge:'rest', date:'2026-06-19', fixed:'Fri 19 Jun',
        desc:'Kit packed, carb-load dinner, early night'},
       {id:'w5comp',  dot:'#D85A30', type:'Competition',  badge:'rest', date:'2026-06-20', fixed:'Sat 20 Jun',
        desc:'NAGA Kids Intermediate \u2014 comp day. Go time.'},
@@ -441,7 +579,14 @@ function loadState(){
   try{matchEdits=JSON.parse(localStorage.getItem('bjj_matchedits')||'{}');}catch(e){}
   try{clEdits=JSON.parse(localStorage.getItem('bjj_pledits')||'{}');}catch(e){}
   try{clDeleted=JSON.parse(localStorage.getItem('bjj_pldeleted')||'{}');}catch(e){}
+  try{
+    customSessions=JSON.parse(localStorage.getItem('bjj_custom')||'{}');
+    const fixed={};
+    Object.keys(customSessions).forEach(k=>{ fixed[parseInt(k)||k]=customSessions[k]; });
+    customSessions=fixed;
+  }catch(e){}
 }
+let _persistTimer=null;
 function persist(){
   try{localStorage.setItem('bjj_sess',JSON.stringify(sessState));}catch(e){}
   try{localStorage.setItem('bjj_gp',JSON.stringify(gpState));}catch(e){}
@@ -452,6 +597,9 @@ function persist(){
   try{localStorage.setItem('bjj_matchedits',JSON.stringify(matchEdits));}catch(e){}
   try{localStorage.setItem('bjj_pledits',JSON.stringify(clEdits));}catch(e){}
   try{localStorage.setItem('bjj_pldeleted',JSON.stringify(clDeleted));}catch(e){}
+  // Debounce Firestore writes — max one write per 1.5s
+  if(_persistTimer) clearTimeout(_persistTimer);
+  _persistTimer = setTimeout(saveToFirestore, 1500);
 }
 function getDesc(id,fb){ return (customDescs[id]!==undefined&&customDescs[id]!==null)?customDescs[id]:fb; }
 
@@ -512,7 +660,18 @@ function sessCardHtml(s, wIdx, today){
   const chkHtml=isRest?''
     :`<div class="chk${isDone?' on':''}" onclick="toggleSess('${s.id}',this)" aria-label="Mark done">${chkSVG()}</div>`;
   const hasNotes=customDescs[s.id]!==undefined&&customDescs[s.id]!==null;
-  const notesBtnLabel=hasNotes?'Edit notes':'Add notes';
+  // For flex/custom sessions the desc IS the topic — show Edit desc.
+  // For fixed classes, show Add/Edit notes as a post-class annotation.
+  const isFlexOrCustom=isFlex||isCustom;
+  const notesBtnLabel=isFlexOrCustom
+    ?'Edit'
+    :(hasNotes?'Edit notes':'Add notes');
+  const editorPlaceholder=isFlexOrCustom
+    ?'Describe the session topic...'
+    :'What did you cover? Any notes...';
+  const editorPrefill=isFlexOrCustom
+    ?desc
+    :(hasNotes?desc:'');
   const typeLabelHtml=isCustom
     ?`<input class="edit-type-input" id="typeinput-${s.id}" value="${s.type}" onchange="saveCustomType('${s.id}',this.value)">`
     :`<span class="type-lbl">${s.type}</span>`;
@@ -525,7 +684,7 @@ function sessCardHtml(s, wIdx, today){
         ${delHtml}
       </div>
       <div class="desc-editor" id="editor-${s.id}">
-        <textarea class="desc-textarea" id="ta-${s.id}" rows="3" placeholder="What did you cover? Any notes...">${hasNotes?desc:''}</textarea>
+        <textarea class="desc-textarea" id="ta-${s.id}" rows="3" placeholder="${editorPlaceholder}">${editorPrefill}</textarea>
         <div class="editor-btns">
           <button class="btn-save" onclick="saveDescField('${s.id}')">Save</button>
           <button class="btn-cancel" onclick="closeEditor('${s.id}')">Cancel</button>
@@ -601,24 +760,27 @@ function renderCalendar(){
 
 function openEditor(id){
   const ta=document.getElementById('ta-'+id);
-  const saved=customDescs[id];
-  ta.value=(saved!==undefined&&saved!==null)?saved:'';
+  // ta already has the right prefill from render — just open
   document.getElementById('editor-'+id).classList.add('open');
   ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 function closeEditor(id){ document.getElementById('editor-'+id).classList.remove('open'); }
 function saveDescField(id){
   const val=document.getElementById('ta-'+id).value.trim();
   const btn=document.getElementById('btn-'+id);
+  const s=WEEKS.flatMap(w=>w.sessions).find(s=>s.id===id)
+       || Object.values(customSessions).flat().find(s=>s.id===id);
+  const isFlexOrCustom=s&&(s.flex||s.custom);
   if(val){
     customDescs[id]=val;
     document.getElementById('desc-'+id).textContent=val;
-    if(btn) btn.textContent='Edit notes';
+    if(btn) btn.textContent='Edit';
   } else {
     delete customDescs[id];
-    const s=WEEKS.flatMap(w=>w.sessions).find(s=>s.id===id);
-    document.getElementById('desc-'+id).textContent=s?s.desc:'';
-    if(btn) btn.textContent='Add notes';
+    const fallback=s?s.desc:'';
+    document.getElementById('desc-'+id).textContent=fallback;
+    if(btn) btn.textContent=isFlexOrCustom?'Edit':'Add notes';
   }
   persist();
   closeEditor(id);
@@ -900,6 +1062,7 @@ try{customSessions=JSON.parse(localStorage.getItem('bjj_custom')||'{}');
 
 function persistCustom(){
   try{localStorage.setItem('bjj_custom',JSON.stringify(customSessions));}catch(e){}
+  persist(); // also syncs to Firestore
 }
 
 const TYPE_DOTS={
@@ -946,6 +1109,58 @@ function saveCustomType(id, val){
     if(s){ s.type=val; s.dot=TYPE_DOTS[val]||'#888780'; }
   });
   persistCustom();
+}
+
+function openSyncModal(){
+  document.getElementById('sync-ta').value='';
+  document.getElementById('sync-msg').textContent='';
+  document.getElementById('sync-modal').classList.add('open');
+}
+function closeSyncModal(){ document.getElementById('sync-modal').classList.remove('open'); }
+
+function exportData(){
+  const payload=JSON.stringify({
+    v:1,
+    sessState, gpState, flexDates, clState, customDescs,
+    gpEdits, matchEdits, clEdits, clDeleted, customSessions
+  });
+  document.getElementById('sync-ta').value=payload;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(payload).then(()=>{
+      document.getElementById('sync-msg').textContent='Copied to clipboard. Paste into the sync box on your other device.';
+    }).catch(()=>{
+      document.getElementById('sync-msg').textContent='Select all the text above and copy it manually.';
+    });
+  } else {
+    document.getElementById('sync-ta').select();
+    document.getElementById('sync-msg').textContent='Select all the text above and copy it manually.';
+  }
+}
+
+function importData(){
+  try{
+    const raw=document.getElementById('sync-ta').value.trim();
+    if(!raw){ document.getElementById('sync-msg').textContent='Paste exported data first.'; return; }
+    const d=JSON.parse(raw);
+    if(d.v!==1){ document.getElementById('sync-msg').textContent='Unrecognised format.'; return; }
+    sessState=d.sessState||{};
+    gpState=d.gpState||{};
+    flexDates=d.flexDates||{};
+    clState=d.clState||{};
+    customDescs=d.customDescs||{};
+    gpEdits=d.gpEdits||{};
+    matchEdits=d.matchEdits||{};
+    clEdits=d.clEdits||{};
+    clDeleted=d.clDeleted||{};
+    customSessions=d.customSessions||{};
+    persist(); persistCustom();
+    saveToFirestore();
+    updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
+    document.getElementById('sync-msg').textContent='Imported successfully.';
+    setTimeout(closeSyncModal, 1200);
+  } catch(e){
+    document.getElementById('sync-msg').textContent='Invalid data — check you pasted the full export.';
+  }
 }
 
 loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
