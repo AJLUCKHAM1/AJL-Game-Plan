@@ -1163,6 +1163,41 @@ function importData(){
   }
 }
 
+// Expose all functions called from HTML onclick/onchange to global scope
+// (required because <script type="module"> has its own scope)
+window.showTab          = showTab;
+window.openEditor       = openEditor;
+window.closeEditor      = closeEditor;
+window.saveDescField    = saveDescField;
+window.saveDate         = saveDate;
+window.toggleSess       = toggleSess;
+window.toggleAddForm    = toggleAddForm;
+window.addCustomSess    = addCustomSess;
+window.deleteCustomSess = deleteCustomSess;
+window.saveCustomType   = saveCustomType;
+window.toggleGp         = toggleGp;
+window.saveGpTitle      = saveGpTitle;
+window.editGpItem       = editGpItem;
+window.saveGpItem       = saveGpItem;
+window.deleteGpItem     = deleteGpItem;
+window.addGpItem        = addGpItem;
+window.saveMatchTitle   = saveMatchTitle;
+window.editMatchItem    = editMatchItem;
+window.saveMatchItem    = saveMatchItem;
+window.deleteMatchItem  = deleteMatchItem;
+window.addMatchItem     = addMatchItem;
+window.toggleClById     = toggleClById;
+window.editClItem       = editClItem;
+window.saveClItem       = saveClItem;
+window.deleteClItem     = deleteClItem;
+window.addClItem        = addClItem;
+window.toggleCl         = toggleCl;
+window.openSyncModal    = openSyncModal;
+window.closeSyncModal   = closeSyncModal;
+window.exportData       = exportData;
+window.importData       = importData;
+window.googleSignIn     = googleSignIn;
+
 loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
 </script>
 </body>
