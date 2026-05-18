@@ -260,109 +260,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   </div>
 </div>
 
-<script type="module">
-// ── Firebase SDK ──────────────────────────────────────────────────────────
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAI2obcCQvO7Apz93hY0mHvZr0CqcRJ38s",
-  authDomain: "bjj-apps.firebaseapp.com",
-  projectId: "bjj-apps",
-  storageBucket: "bjj-apps.firebasestorage.app",
-  messagingSenderId: "524700200059",
-  appId: "1:524700200059:web:c738320561b0680138c6de"
-};
-const fbApp  = initializeApp(firebaseConfig);
-const auth   = getAuth(fbApp);
-const db     = getFirestore(fbApp);
-let currentUid = null;
-let firestoreUnsub = null; // live listener unsubscribe handle
-
-// ── Firestore helpers ─────────────────────────────────────────────────────
-function userDocRef(uid){ return doc(db, 'bjjCompPrep', uid); }
-
-async function saveToFirestore(){
-  if(!currentUid) return;
-  try{
-    await setDoc(userDocRef(currentUid), {
-      sessState, gpState, flexDates, clState, customDescs,
-      gpEdits, matchEdits, clEdits, clDeleted, customSessions,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  } catch(e){ console.warn('Firestore save failed', e); }
-}
-
-function applyRemoteData(data){
-  if(!data) return;
-  sessState      = data.sessState      || {};
-  gpState        = data.gpState        || {};
-  flexDates      = data.flexDates      || {};
-  clState        = data.clState        || {};
-  customDescs    = data.customDescs    || {};
-  gpEdits        = data.gpEdits        || {};
-  matchEdits     = data.matchEdits     || {};
-  clEdits        = data.clEdits        || {};
-  clDeleted      = data.clDeleted      || {};
-  customSessions = data.customSessions || {};
-  // Fix numeric keys for customSessions
-  const fixed={};
-  Object.keys(customSessions).forEach(k=>{ fixed[parseInt(k)||k]=customSessions[k]; });
-  customSessions=fixed;
-  persist();
-  updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
-}
-
-function subscribeFirestore(uid){
-  if(firestoreUnsub) firestoreUnsub();
-  firestoreUnsub = onSnapshot(userDocRef(uid), snap=>{
-    if(snap.exists()){
-      applyRemoteData(snap.data());
-    }
-  }, err=>{ console.warn('Firestore listener error', err); });
-}
-
-// ── Auth state ────────────────────────────────────────────────────────────
-onAuthStateChanged(auth, user=>{
-  if(user){
-    currentUid = user.uid;
-    updateAuthUI(user);
-    subscribeFirestore(user.uid);
-  } else {
-    currentUid = null;
-    if(firestoreUnsub){ firestoreUnsub(); firestoreUnsub=null; }
-    updateAuthUI(null);
-  }
-});
-
-function updateAuthUI(user){
-  const btn = document.getElementById('auth-btn');
-  const info = document.getElementById('auth-info');
-  if(!btn) return;
-  if(user){
-    btn.textContent = 'Sign out';
-    btn.onclick = ()=>signOut(auth);
-    info.textContent = user.displayName || user.email || 'Signed in (anonymous)';
-  } else {
-    btn.textContent = 'Sign in with Google';
-    btn.onclick = googleSignIn;
-    info.textContent = 'Not signed in — data saved locally only';
-  }
-}
-
-async function googleSignIn(){
-  try{
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  } catch(e){
-    console.warn('Sign in failed', e);
-    // Fallback to anonymous if popup blocked (e.g. iOS PWA)
-    try{ await signInAnonymously(auth); } catch(e2){}
-  }
-}
+<script>
+// ── Firebase loaded separately via module script below ───────────────────
+// Stub functions replaced once Firebase module initialises
+let saveToFirestore = ()=>{};
+let googleSignIn = ()=>{ alert('Firebase loading — try again in a moment.'); };
 
 const COMP = new Date('2026-06-20');
 
@@ -599,7 +501,7 @@ function persist(){
   try{localStorage.setItem('bjj_pldeleted',JSON.stringify(clDeleted));}catch(e){}
   // Debounce Firestore writes — max one write per 1.5s
   if(_persistTimer) clearTimeout(_persistTimer);
-  _persistTimer = setTimeout(saveToFirestore, 1500);
+  _persistTimer = setTimeout(()=>window.saveToFirestore(), 1500);
 }
 function getDesc(id,fb){ return (customDescs[id]!==undefined&&customDescs[id]!==null)?customDescs[id]:fb; }
 
@@ -1154,7 +1056,7 @@ function importData(){
     clDeleted=d.clDeleted||{};
     customSessions=d.customSessions||{};
     persist(); persistCustom();
-    saveToFirestore();
+    window.saveToFirestore();
     updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
     document.getElementById('sync-msg').textContent='Imported successfully.';
     setTimeout(closeSyncModal, 1200);
@@ -1199,6 +1101,105 @@ window.importData       = importData;
 window.googleSignIn     = googleSignIn;
 
 loadState(); updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
+</script>
+
+<!-- Firebase — loaded as module, wires into app after load ──────────────-->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAuth, signInWithPopup, signInAnonymously,
+         GoogleAuthProvider, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAI2obcCQvO7Apz93hY0mHvZr0CqcRJ38s",
+  authDomain: "bjj-apps.firebaseapp.com",
+  projectId: "bjj-apps",
+  storageBucket: "bjj-apps.firebasestorage.app",
+  messagingSenderId: "524700200059",
+  appId: "1:524700200059:web:c738320561b0680138c6de"
+};
+
+try {
+  const fbApp = initializeApp(firebaseConfig);
+  const auth  = getAuth(fbApp);
+  const db    = getFirestore(fbApp);
+  let currentUid = null;
+  let unsub = null;
+
+  function userDocRef(uid){ return doc(db,'bjjCompPrep',uid); }
+
+  // Wire saveToFirestore into the app
+  window.saveToFirestore = async function(){
+    if(!currentUid) return;
+    try{
+      await setDoc(userDocRef(currentUid), {
+        sessState, gpState, flexDates, clState, customDescs,
+        gpEdits, matchEdits, clEdits, clDeleted, customSessions,
+        updatedAt: serverTimestamp()
+      },{ merge:true });
+    } catch(e){ console.warn('Firestore save failed',e); }
+  };
+
+  function applyRemoteData(data){
+    if(!data) return;
+    sessState      = data.sessState      || {};
+    gpState        = data.gpState        || {};
+    flexDates      = data.flexDates      || {};
+    clState        = data.clState        || {};
+    customDescs    = data.customDescs    || {};
+    gpEdits        = data.gpEdits        || {};
+    matchEdits     = data.matchEdits     || {};
+    clEdits        = data.clEdits        || {};
+    clDeleted      = data.clDeleted      || {};
+    customSessions = data.customSessions || {};
+    const fixed={};
+    Object.keys(customSessions).forEach(k=>{ fixed[parseInt(k)||k]=customSessions[k]; });
+    customSessions=fixed;
+    persist();
+    updateStats(); renderCalendar(); renderGamePlan(); renderMatch(); renderComp();
+  }
+
+  function subscribeFirestore(uid){
+    if(unsub) unsub();
+    unsub = onSnapshot(userDocRef(uid), snap=>{
+      if(snap.exists()) applyRemoteData(snap.data());
+    }, err=>console.warn('Firestore error',err));
+  }
+
+  // Wire googleSignIn into the app
+  window.googleSignIn = async function(){
+    try{
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch(e){
+      console.warn('Popup sign-in failed',e);
+      try{ await signInAnonymously(auth); }catch(e2){}
+    }
+  };
+
+  onAuthStateChanged(auth, user=>{
+    const btn  = document.getElementById('auth-btn');
+    const info = document.getElementById('auth-info');
+    if(user){
+      currentUid = user.uid;
+      if(btn){ btn.textContent='Sign out'; btn.onclick=()=>signOut(auth); }
+      if(info) info.textContent = user.displayName||user.email||'Signed in';
+      subscribeFirestore(user.uid);
+    } else {
+      currentUid = null;
+      if(unsub){ unsub(); unsub=null; }
+      if(btn){ btn.textContent='Sign in with Google'; btn.onclick=window.googleSignIn; }
+      if(info) info.textContent='Not signed in — data saved locally only';
+    }
+  });
+
+} catch(e){
+  console.warn('Firebase failed to initialise:',e);
+  const info = document.getElementById('auth-info');
+  if(info) info.textContent='Firebase unavailable — using local storage';
+}
 </script>
 </body>
 </html>
